@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -810,12 +810,12 @@ function getPiste(id){return pistes.find(p=>p.id===id)||{};}
 
 function badge(s){return'<span class="badge '+(SBADGE[s]||'b-rdvd')+'">'+s+'</span>';}
 function dot(u){const m={rouge:'dr',amber:'da',vert:'dg'};return'<span class="udot '+(m[u]||'dg')+'"></span>';}
-function fmtDate(d){if(!d)return'â€”';return new Date(d+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'});}
+function fmtDate(d){if(!d)return'—';return new Date(d+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'});}
 function relWarn(d){
   if(!d)return'';
   const today=new Date();today.setHours(0,0,0,0);
   const diff=Math.round((new Date(d+'T00:00:00')-today)/86400000);
-  if(diff<0)return'<span style="color:#E24B4A;font-size:11px;font-weight:600">âš  Retard</span>';
+  if(diff<0)return'<span style="color:#E24B4A;font-size:11px;font-weight:600">⚠ Retard</span>';
   if(diff===0)return'<span style="color:#E24B4A;font-size:11px;font-weight:600">Auj.</span>';
   if(diff<=3)return'<span style="color:#c97a10;font-size:11px;font-weight:600">J+'+diff+'</span>';
   return'<span style="font-size:12px">'+fmtDate(d)+'</span>';
@@ -833,12 +833,12 @@ function updateActionList(actionId, stageId){
 function fillSelect(id,evts){
   const sel=document.getElementById(id);if(!sel)return;
   const cur=sel.value;
-  sel.innerHTML='<option value="">Tous les Ã©vÃ©nements</option>'
+  sel.innerHTML='<option value="">Tous les événements</option>'
     +evts.map(e=>'<option value="'+e+'">'+e+'</option>').join('');
   sel.value=cur;
 }
 
-// â”€â”€ NAV â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── NAV ────────────────────────────────────────────────────────────────────
 function go(t){
   curTab=t;
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
@@ -871,7 +871,7 @@ function go(t){
   if(t==='stats-crm')renderStatsCrm();
 }
 
-// â”€â”€ DASHBOARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── DASHBOARD ──────────────────────────────────────────────────────────────
 function renderDash(){
   const comm=(document.getElementById('dash-comm')||{value:''}).value;
   const filtered=comm?opps.filter(o=>o.assigne===comm):opps;
@@ -893,16 +893,16 @@ function renderDash(){
   document.getElementById('dash-metrics').innerHTML=[
     {l:'Pistes',v:filtPistes.length,c:'c1'},
     {l:'Concluants',v:concluant,c:'c4'},
-    {l:'Ã€ creuser',v:filtered.filter(o=>o.stage==='Ã€ creuser').length,c:'c1'},
+    {l:'À creuser',v:filtered.filter(o=>o.stage==='À creuser').length,c:'c1'},
     {l:'En veille',v:filtered.filter(o=>o.stage==='En veille').length,c:'c3'},
-    {l:'AbandonnÃ©',v:filtered.filter(o=>o.stage==='AbandonnÃ©').length,c:'c5'},
+    {l:'Abandonné',v:filtered.filter(o=>o.stage==='Abandonné').length,c:'c5'},
   ].map(m=>'<div class="mc"><div class="mc-l">'+m.l+'</div><div class="mc-v '+m.c+'">'+m.v+'</div></div>').join('');
 
   // Pipeline cols
-  // Build stage buckets: first 4 stages normal, 5th = TerminÃ© = all TERM_STAGES
+  // Build stage buckets: first 4 stages normal, 5th = Terminé = all TERM_STAGES
   const bs={};
   PIPE_STAGES.forEach(s=>bs[s]=filtered.filter(o=>o.stage===s));
-  bs['TerminÃ©']=filtered.filter(o=>TERM_STAGES.includes(o.stage));
+  bs['Terminé']=filtered.filter(o=>TERM_STAGES.includes(o.stage));
 
   const pipeEl=document.getElementById('dash-pipe');
   pipeEl.innerHTML=DISPLAY_STAGES.map(s=>{
@@ -913,15 +913,15 @@ function renderDash(){
       const isTermine=TERM_STAGES.includes(o.stage);
       const termColor=TERM_COLORS[o.stage]||'#888';
       const subLine=isTermine
-        ?'<div style="font-size:10px;font-weight:600;color:'+termColor+';margin-top:2px">â—‰ '+o.stage+'</div>'
-        :(o.next_action?'<div style="font-size:10px;color:'+color+';margin-top:2px">â†’ '+o.next_action+'</div>':'');
+        ?'<div style="font-size:10px;font-weight:600;color:'+termColor+';margin-top:2px">◉ '+o.stage+'</div>'
+        :(o.next_action?'<div style="font-size:10px;color:'+color+';margin-top:2px">→ '+o.next_action+'</div>':'');
       return'<div class="pccard" draggable="true" data-opp-id="'+o.id+'" data-action="editOpp" data-id="'+o.id+'">'
-        +'<strong style="font-size:11px">'+(p.nom||'â€”')+'</strong>'
+        +'<strong style="font-size:11px">'+(p.nom||'—')+'</strong>'
         +'<div style="font-size:10px;color:var(--tx2)">'+o.societe+'</div>'
         +(o.solution?'<div style="font-size:10px;color:var(--ac);margin-top:1px">'+o.solution+'</div>':'')
         +subLine
         +'</div>';
-    }).join('')+(list.length===0?'<div style="font-size:10px;color:var(--txm)">â€”</div>':'');
+    }).join('')+(list.length===0?'<div style="font-size:10px;color:var(--txm)">—</div>':'');
     return'<div class="pcol" data-stage="'+s+'" style="border-left:3px solid '+color+'">'
       +'<div class="pchd"><span>'+s+'</span><span class="pccnt">'+list.length+'</span></div>'
       +cards
@@ -930,9 +930,9 @@ function renderDash(){
   // Attach drag & drop listeners
   initDragDrop();
 
-  // Actions Ã  faire
+  // Actions à faire
   const actionsEl=document.getElementById('dash-actions');
-  const STAGE_ACTIONS_ORDER=['Demande RDV','RDV planifiÃ©','Qualification besoin','POC / POV'];
+  const STAGE_ACTIONS_ORDER=['Demande RDV','RDV planifié','Qualification besoin','POC / POV'];
 
   // Regroup actions by urgency category
   const retard=[], aujourdhui=[], prochains=[], sansDates=[];
@@ -959,13 +959,13 @@ function renderDash(){
     return'<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg2);border-radius:6px;margin-bottom:5px;flex-wrap:wrap">'
       +'<div style="width:8px;height:8px;border-radius:50%;background:'+urgColor+';flex-shrink:0"></div>'
       +'<div style="flex:1;min-width:120px">'
-        +'<strong style="font-size:13px;font-weight:500">'+(p.nom||'â€”')+'</strong>'
+        +'<strong style="font-size:13px;font-weight:500">'+(p.nom||'—')+'</strong>'
         +'<span style="font-size:12px;color:var(--tx2);margin-left:6px">'+o.societe+'</span>'
       +'</div>'
       +'<div>'+badge(o.stage)+'</div>'
       +(o.next_action
-        ?'<div style="font-size:12px;color:'+stageColor+';font-weight:500">â†’ '+o.next_action+'</div>'
-        :'<div style="font-size:12px;color:var(--txm)">Aucune action dÃ©finie</div>')
+        ?'<div style="font-size:12px;color:'+stageColor+';font-weight:500">→ '+o.next_action+'</div>'
+        :'<div style="font-size:12px;color:var(--txm)">Aucune action définie</div>')
       +'<div style="font-size:11px;font-weight:600;color:'+urgColor+';white-space:nowrap">'+urgLabel+'</div>'
       +(o.assigne?'<div style="font-size:11px;color:var(--txm)">'+o.assigne+'</div>':'')
       +'<button class="abtn" data-action="editOpp" data-id="'+o.id+'" title="Modifier" style="padding:3px 5px"><i class="ti ti-edit" style="font-size:13px"></i></button>'
@@ -986,7 +986,7 @@ function renderDash(){
     section('En retard','#E24B4A','ti-alert-circle',retard,item=>'Retard de '+Math.abs(item.diff)+'j')
     +section("Aujourd'hui",'#E24B4A','ti-clock',aujourdhui,()=>"Aujourd'hui")
     +section('Cette semaine','#c97a10','ti-calendar-due',prochains,item=>'J+'+item.diff)
-    +section('Sans date de relance','#888780','ti-calendar-off',sansDates,()=>'â€”');
+    +section('Sans date de relance','#888780','ti-calendar-off',sansDates,()=>'—');
 
   actionsEl.innerHTML=html||'<div style="text-align:center;padding:1.5rem;color:var(--txm);font-size:13px"><i class="ti ti-check" style="font-size:24px;display:block;margin-bottom:6px;color:#1AAE6A"></i>Aucune action en attente</div>';
 }
@@ -1008,15 +1008,15 @@ function renderPipeline(){
     const p=getPiste(o.piste_id);
     const color=PIPE_COLORS[o.stage]||TERM_COLORS[o.stage]||'#888';
     return'<tr>'
-      +'<td>'+dot(o.urgence)+'<strong style="font-weight:500">'+(p.nom||'â€”')+'</strong>'
+      +'<td>'+dot(o.urgence)+'<strong style="font-weight:500">'+(p.nom||'—')+'</strong>'
       +(p.poste?'<br><span style="font-size:10px;color:var(--txm)">'+p.poste+'</span>':'')+'</td>'
       +'<td>'+o.societe+'</td>'
       +'<td style="font-size:11px">'+o.evtnom+'</td>'
-      +'<td>'+(o.solution||'â€”')+'</td>'
+      +'<td>'+(o.solution||'—')+'</td>'
       +'<td>'+badge(o.stage)+'</td>'
-      +'<td>'+(o.next_action?'<span style="font-size:11px;color:'+color+'">â†’ '+o.next_action+'</span>':'<span style="color:var(--txm)">â€”</span>')
+      +'<td>'+(o.next_action?'<span style="font-size:11px;color:'+color+'">→ '+o.next_action+'</span>':'<span style="color:var(--txm)">—</span>')
         +'<br>'+relWarn(o.reldate)+'</td>'
-      +'<td>'+(o.assigne||'<span style="color:var(--txm)">â€”</span>')+'</td>'
+      +'<td>'+(o.assigne||'<span style="color:var(--txm)">—</span>')+'</td>'
       +'<td style="text-align:right">'
       +'<button class="abtn" data-action="editOpp" data-id="'+o.id+'" title="Modifier"><i class="ti ti-edit"></i></button>'
       +'<button class="abtn" data-action="delOpp" data-id="'+o.id+'" title="Supprimer"><i class="ti ti-trash"></i></button>'
@@ -1031,7 +1031,7 @@ function delOpp(id){
   persist();renderPipeline();renderDash();updateTopbar();
 }
 
-// â”€â”€ PISTES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── PISTES ─────────────────────────────────────────────────────────────────
 
 
 function openAddPisteModal(){
@@ -1044,7 +1044,7 @@ function openAddPisteModal(){
   // Populate event select
   const sel=document.getElementById('ap-evtnom');
   const evts=getEvtNames();
-  sel.innerHTML='<option value="">-- Ã‰vÃ©nement --</option>'
+  sel.innerHTML='<option value="">-- Événement --</option>'
     +evts.map(function(e){return'<option value="'+e+'">'+e+'</option>';}).join('');
   sel.value='';
   document.getElementById('add-piste-modal').style.display='flex';
@@ -1053,7 +1053,7 @@ function openAddPisteModal(){
 function saveAddPiste(){
   const nom=document.getElementById('ap-nom').value.trim();
   const societe=document.getElementById('ap-societe').value.trim();
-  if(!nom||!societe){alert('Nom et sociÃ©tÃ© requis.');return;}
+  if(!nom||!societe){alert('Nom et société requis.');return;}
   const piste={
     id:'l_'+uid(),
     nom:nom,
@@ -1097,7 +1097,7 @@ function saveEditPiste(){
   if(!p)return;
   const nom=document.getElementById('ep-nom').value.trim();
   const societe=document.getElementById('ep-societe').value.trim();
-  if(!nom||!societe){alert('Nom et sociÃ©tÃ© requis.');return;}
+  if(!nom||!societe){alert('Nom et société requis.');return;}
   p.nom=nom;
   p.societe=societe.trim().toUpperCase();
   p.poste=document.getElementById('ep-poste').value.trim();
@@ -1142,9 +1142,9 @@ function renderPistes(){
       +'<td><strong style="font-weight:500">'+p.nom+'</strong>'
       +(p.solution?'<br><span style="font-size:10px;color:var(--ac)">'+p.solution+'</span>':'')+'</td>'
       +'<td>'+p.societe+'</td>'
-      +'<td>'+(p.poste||'â€”')+'</td>'
-      +'<td style="font-size:11px">'+(p.email||'â€”')+'</td>'
-      +'<td style="font-size:11px">'+(p.evtnom||p.source||'â€”')+'</td>'
+      +'<td>'+(p.poste||'—')+'</td>'
+      +'<td style="font-size:11px">'+(p.email||'—')+'</td>'
+      +'<td style="font-size:11px">'+(p.evtnom||p.source||'—')+'</td>'
       +'<td>'+statusBadge+'</td>'
       +'<td style="text-align:right;white-space:nowrap">'+addBtn
       +'<button class="abtn" data-action="openEditPiste" data-id="'+p.id+'" title="Modifier"><i class="ti ti-edit"></i></button>'
@@ -1164,15 +1164,15 @@ function delPiste(id){
   persist();renderPistes();renderDash();updateTopbar();
 }
 
-// â”€â”€ SOCIÃ‰TÃ‰S â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── SOCIÉTÉS ───────────────────────────────────────────────────────────────
 function renderSocietes(){
   const q=(document.getElementById('soc-search')||{value:''}).value.toLowerCase();
   const sortBy=(document.getElementById('soc-sort')||{value:'opps'}).value;
 
-  // Build sociÃ©tÃ© map
+  // Build société map
   const socMap={};
   opps.forEach(function(o){
-    const key=o.societe||'â€”';
+    const key=o.societe||'—';
     if(!socMap[key])socMap[key]={nom:key,opps:[],pistes:new Set(),valeur:0};
     socMap[key].opps.push(o);
     socMap[key].pistes.add(o.piste_id);
@@ -1196,7 +1196,7 @@ function renderSocietes(){
     const sid='soc_'+s.nom.replace(/[^a-z0-9]/gi,'_');
     const assignes=[...new Set(s.opps.map(function(o){return o.assigne;}).filter(Boolean))];
 
-    // â”€â”€ Same KPI blocks as Dashboard "Vue d'ensemble" â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Same KPI blocks as Dashboard "Vue d'ensemble" ─────────────────────
     const concluant=s.opps.filter(function(o){return o.stage==='Concluant';}).length;
     const acreuser=s.opps.filter(function(o){return o.stage==='\u00c0 creuser';}).length;
     const enVeille=s.opps.filter(function(o){return o.stage==='En veille';}).length;
@@ -1217,37 +1217,37 @@ function renderSocietes(){
         +'</div>';
     }).join('');
 
-    // â”€â”€ Detail rows (collapsed) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Detail rows (collapsed) ───────────────────────────────────────────
     const detailRows=s.opps.map(function(o){
       const p=getPiste(o.piste_id);
       const isTermine=TERM_STAGES.includes(o.stage);
       const termColor=TERM_COLORS[o.stage]||'#888';
       const stageColor=PIPE_COLORS[o.stage]||'#888';
       return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--bg);border-radius:6px;font-size:12px;flex-wrap:wrap;margin-bottom:4px;cursor:pointer" data-action="openEditPiste" data-id="'+p.id+'" title="Modifier la piste">'
-        +'<span style="flex:1;min-width:100px;font-weight:500">'+(p.nom||'â€”')+'</span>'
-        +'<span style="color:var(--tx2)">'+(o.solution||'â€”')+'</span>'
+        +'<span style="flex:1;min-width:100px;font-weight:500">'+(p.nom||'—')+'</span>'
+        +'<span style="color:var(--tx2)">'+(o.solution||'—')+'</span>'
         +badge(o.stage)
         +(isTermine
-          ?'<span style="font-size:11px;font-weight:600;color:'+termColor+'">â—‰ '+o.stage+'</span>'
-          :(o.next_action?'<span style="font-size:11px;color:'+stageColor+'">â†’ '+o.next_action+'</span>':''))
+          ?'<span style="font-size:11px;font-weight:600;color:'+termColor+'">◉ '+o.stage+'</span>'
+          :(o.next_action?'<span style="font-size:11px;color:'+stageColor+'">→ '+o.next_action+'</span>':''))
         +(o.valeur>0?'<span style="color:#7A1AEA;font-weight:600">'+parseInt(o.valeur).toLocaleString('fr-FR')+' Ar</span>':'')
         +(o.assigne?'<span style="color:#1AAE6A;font-size:11px">'+o.assigne+'</span>':'')
         +'<button class="abtn" data-action="editOpp" data-id="'+o.id+'" style="padding:2px 4px" onclick="event.stopPropagation()"><i class="ti ti-edit" style="font-size:12px"></i></button>'
         +'</div>';
     }).join('');
 
-    // â”€â”€ Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Card ──────────────────────────────────────────────────────────────
     var card=document.createElement('div');
     card.style.cssText='border:0.5px solid var(--bl);border-radius:var(--rm);padding:1rem;margin-bottom:10px;background:var(--bg2)';
     card.innerHTML=
-      // Header row â€” name + kpis + chevron all on same line, clickable
+      // Header row — name + kpis + chevron all on same line, clickable
       '<div data-action="toggleEvtDetail" data-sid="'+sid+'"'
         +' style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;flex-wrap:wrap">'
         // Name + assigned
         +'<div style="display:flex;align-items:center;gap:6px;min-width:0;flex-shrink:1">'
           +'<i class="ti ti-building" style="color:var(--ac);font-size:14px;flex-shrink:0"></i>'
           +'<span style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+s.nom+'</span>'
-          +(assignes.length?'<span style="font-size:11px;color:#1AAE6A;flex-shrink:0;white-space:nowrap">Â· '+assignes.join(', ')+'</span>':'')
+          +(assignes.length?'<span style="font-size:11px;color:#1AAE6A;flex-shrink:0;white-space:nowrap">· '+assignes.join(', ')+'</span>':'')
         +'</div>'
         // KPIs inline
         +'<div style="display:flex;gap:5px;flex-wrap:wrap;flex:1;align-items:center">'
@@ -1260,7 +1260,7 @@ function renderSocietes(){
       // Detail panel (collapsed)
       +'<div id="'+sid+'" style="display:none;margin-top:12px;padding-top:12px;border-top:0.5px solid var(--bl)">'
         +'<div style="font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">'
-          +s.opps.length+' opportunit'+(s.opps.length>1?'Ã©s':'Ã©')+' Â· '+[...s.pistes].length+' piste'+(([...s.pistes].length>1)?'s':'')
+          +s.opps.length+' opportunit'+(s.opps.length>1?'és':'é')+' · '+[...s.pistes].length+' piste'+(([...s.pistes].length>1)?'s':'')
         +'</div>'
         +detailRows
       +'</div>';
@@ -1274,8 +1274,8 @@ function openPisteModal(pid){
   const part=participants.find(x=>x.id===pid);
   if(!part)return;
   document.getElementById('piste-part-info').innerHTML=
-    '<strong>'+part.nom+'</strong> â€” '+part.societe
-    +(part.poste?' Â· <span style="color:var(--tx2)">'+part.poste+'</span>':'')+'<br>'
+    '<strong>'+part.nom+'</strong> — '+part.societe
+    +(part.poste?' · <span style="color:var(--tx2)">'+part.poste+'</span>':'')+'<br>'
     +'<span style="color:var(--txm);font-size:12px"><i class="ti ti-calendar-event" style="font-size:11px;margin-right:4px"></i>'+part.evtnom+'</span>';
   document.getElementById('p-solution').value='';
   document.getElementById('p-assigne').value='';
@@ -1305,7 +1305,7 @@ function confirmPiste(){
   if(curTab==='stats-events'||curTab==='stats-crm')renderStats();
 }
 
-// â”€â”€ PISTE â†’ PIPELINE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── PISTE → PIPELINE ───────────────────────────────────────────────────────
 
 function getOrCreatePiste(partId){
   const part=participants.find(function(x){return x.id===partId;});
@@ -1364,7 +1364,7 @@ function convertEnPiste(source, id){
     } else {
       var piste={
         id:'l_'+uid(), nom:c.nom, societe:c.societe, poste:c.poste,
-        email:c.email, tel:c.tel, evtnom:'', source:'Mailing â€” '+m.nom,
+        email:c.email, tel:c.tel, evtnom:'', source:'Mailing — '+m.nom,
         solution:'', assigne:'', notes:'', created:new Date().toISOString()
       };
       pistes.unshift(piste);
@@ -1386,11 +1386,11 @@ function openEnterPipeline(pisteId){
 
   // Populate piste select
   const sel=document.getElementById('o-piste');
-  sel.innerHTML='<option value="">-- SÃ©lectionner une piste --</option>'
-    +'<option value="__new__">âœš CrÃ©er une nouvelle pisteâ€¦</option>'
+  sel.innerHTML='<option value="">-- Sélectionner une piste --</option>'
+    +'<option value="__new__">✚ Créer une nouvelle piste…</option>'
     +pistes.map(lp=>{
       const inPipe=opps.some(o=>o.piste_id===lp.id&&PIPE_STAGES.includes(o.stage));
-      return'<option value="'+lp.id+'"'+(inPipe?' style="color:var(--txm)"':'')+'>'+lp.nom+' â€” '+lp.societe+(inPipe?' (dÃ©jÃ  en pipeline)':'')+'</option>';
+      return'<option value="'+lp.id+'"'+(inPipe?' style="color:var(--txm)"':'')+'>'+lp.nom+' — '+lp.societe+(inPipe?' (déjà en pipeline)':'')+'</option>';
     }).join('');
   if(pisteId)sel.value=pisteId;
   onPisteChange();
@@ -1428,12 +1428,12 @@ function openOppModal(){
 
 function saveOpp(){
   let pisteId=document.getElementById('o-piste').value;
-  if(!pisteId){alert('SÃ©lectionner une piste ou en crÃ©er une nouveau.');return;}
+  if(!pisteId){alert('Sélectionner une piste ou en créer une nouveau.');return;}
   // Create new piste inline if needed
   if(pisteId==='__new__'){
     const nom=(document.getElementById('o-new-nom')||{value:''}).value.trim();
     const soc=(document.getElementById('o-new-soc')||{value:''}).value.trim();
-    if(!nom||!soc){alert('Nom et sociÃ©tÃ© requis pour la nouvelle piste.');return;}
+    if(!nom||!soc){alert('Nom et société requis pour la nouvelle piste.');return;}
     const newPiste={
       id:'l_'+uid(),
       nom,societe:soc,
@@ -1473,14 +1473,14 @@ function saveOpp(){
   if(curTab==='stats-events'||curTab==='stats-crm')renderStats();
 }
 
-// â”€â”€ EDIT OPPORTUNITÃ‰ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── EDIT OPPORTUNITÉ ───────────────────────────────────────────────────────
 function openEditOpp(id){
   editOppId=id;
   const o=opps.find(x=>x.id===id);
   if(!o)return;
   const p=getPiste(o.piste_id);
   document.getElementById('edit-info').innerHTML=
-    '<strong>'+(p.nom||'â€”')+'</strong> â€” '+o.societe
+    '<strong>'+(p.nom||'—')+'</strong> — '+o.societe
     +'<br><span style="color:var(--txm);font-size:12px">'+o.evtnom+'</span>';
   document.getElementById('e-stage').value=o.stage;
   updateActionList('e-action','e-stage');
@@ -1519,7 +1519,7 @@ function closeModals(){
   editOppId=null;convPartId=null;
 }
 
-// â”€â”€ STATS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── STATS ──────────────────────────────────────────────────────────────────
 function toggleEvtDetail(sid){
   const el=document.getElementById(sid);
   const icon=document.getElementById('icon_'+sid);
@@ -1536,8 +1536,8 @@ function updateEvt(evtName,field,val){
 
 
 
-const EVT_STATUT_BADGE={'InvitÃ©':'b-invite','ConfirmÃ©':'b-confirme','PrÃ©sent':'b-present','Absent':'b-absent','ExcusÃ©':'b-excuse'};
-const EVT_STATUT_LIST=['InvitÃ©','ConfirmÃ©','PrÃ©sent','Absent','ExcusÃ©'];
+const EVT_STATUT_BADGE={'Invité':'b-invite','Confirmé':'b-confirme','Présent':'b-present','Absent':'b-absent','Excusé':'b-excuse'};
+const EVT_STATUT_LIST=['Invité','Confirmé','Présent','Absent','Excusé'];
 
 let currentEventName=null;
 
@@ -1549,8 +1549,8 @@ function openAddEventModal(){
 
 function saveAddEvent(){
   const nom=document.getElementById('ae-nom').value.trim();
-  if(!nom){alert('Nom de l\'Ã©vÃ©nement requis.');return;}
-  if(evtData[nom]){alert('Un Ã©vÃ©nement avec ce nom existe dÃ©jÃ .');return;}
+  if(!nom){alert('Nom de l\'événement requis.');return;}
+  if(evtData[nom]){alert('Un événement avec ce nom existe déjà.');return;}
   evtData[nom]={
     date:document.getElementById('ae-date').value,
     lieu:document.getElementById('ae-lieu').value.trim(),
@@ -1564,16 +1564,16 @@ function saveAddEvent(){
 
 function openAddParticipantModal(evtName){
   currentEventName=evtName;
-  document.getElementById('ap2-title').textContent='Ajouter un participant â€” '+evtName;
+  document.getElementById('ap2-title').textContent='Ajouter un participant — '+evtName;
   ['ap2-nom','ap2-societe','ap2-poste','ap2-email','ap2-tel'].forEach(function(id){document.getElementById(id).value='';});
-  document.getElementById('ap2-statut').value='InvitÃ©';
+  document.getElementById('ap2-statut').value='Invité';
   document.getElementById('add-participant-modal').style.display='flex';
 }
 
 function saveAddParticipant(){
   const nom=document.getElementById('ap2-nom').value.trim();
   const societe=document.getElementById('ap2-societe').value.trim();
-  if(!nom||!societe){alert('Nom et sociÃ©tÃ© requis.');return;}
+  if(!nom||!societe){alert('Nom et société requis.');return;}
   const p={
     id:'p_'+uid(),
     nom:nom, societe:societe,
@@ -1599,7 +1599,7 @@ function openEditParticipantModal(pid){
   document.getElementById('ep2-poste').value=p.poste||'';
   document.getElementById('ep2-email').value=p.email||'';
   document.getElementById('ep2-tel').value=p.tel||'';
-  document.getElementById('ep2-statut').value=p.statut||'PrÃ©sent';
+  document.getElementById('ep2-statut').value=p.statut||'Présent';
   document.getElementById('edit-participant-modal').setAttribute('data-pid',pid);
   document.getElementById('edit-participant-modal').style.display='flex';
 }
@@ -1611,7 +1611,7 @@ function saveEditParticipant(){
   if(!p)return;
   const nom=document.getElementById('ep2-nom').value.trim();
   const societe=document.getElementById('ep2-societe').value.trim();
-  if(!nom||!societe){alert('Nom et sociÃ©tÃ© requis.');return;}
+  if(!nom||!societe){alert('Nom et société requis.');return;}
   p.nom=nom; p.societe=societe.trim().toUpperCase();
   p.societe=p.societe;
   p.poste=document.getElementById('ep2-poste').value.trim();
@@ -1625,7 +1625,7 @@ function saveEditParticipant(){
 function updateEvtPresents(evtName){
   if(!evtData[evtName])return;
   evtData[evtName].presents=participants.filter(function(p){
-    return p.evtnom===evtName&&p.statut==='PrÃ©sent';
+    return p.evtnom===evtName&&p.statut==='Présent';
   }).length;
 }
 
@@ -1645,16 +1645,16 @@ function renderEvents(){
     const oppsEvt=opps.filter(function(o){return o.evtnom===e&&PIPE_STAGES.includes(o.stage);}).length;
     const inv=parseInt(ed.invites)||0;
     const cout=parseInt(ed.cout)||0;
-    const tconv=ptotal>0?Math.round(pistesEvt/ptotal*100)+'%':'â€”';
-    const cl=cout>0&&oppsEvt>0?Math.round(cout/oppsEvt).toLocaleString('fr-FR')+' Ar':'â€”';
+    const tconv=ptotal>0?Math.round(pistesEvt/ptotal*100)+'%':'—';
+    const cl=cout>0&&oppsEvt>0?Math.round(cout/oppsEvt).toLocaleString('fr-FR')+' Ar':'—';
     const color=EVT_PAL[i%EVT_PAL.length];
     const sid='evcard_'+e.replace(/[^a-z0-9]/gi,'_');
-    const dateStr=ed.date?new Date(ed.date+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}):'â€”';
+    const dateStr=ed.date?new Date(ed.date+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}):'—';
 
     const evtParticipants=participants.filter(function(p){return p.evtnom===e;});
     const nbInvites=evtParticipants.length;
-    const nbPresents=evtParticipants.filter(function(p){return p.statut==='PrÃ©sent';}).length;
-    const nbConfirmes=evtParticipants.filter(function(p){return p.statut==='ConfirmÃ©';}).length;
+    const nbPresents=evtParticipants.filter(function(p){return p.statut==='Présent';}).length;
+    const nbConfirmes=evtParticipants.filter(function(p){return p.statut==='Confirmé';}).length;
     const nbAbsents=evtParticipants.filter(function(p){return p.statut==='Absent';}).length;
     const partRows=evtParticipants.map(function(p){
       const isPiste=p.converted&&p.piste_id;
@@ -1665,17 +1665,17 @@ function renderEvents(){
         const opp=opps.find(function(o){return o.piste_id===pisteObj.id;});
         pipeCell=badge(opp.stage);
       } else if(isPiste){
-        pipeCell='<span class="badge b-piste">Piste âœ“</span>';
+        pipeCell='<span class="badge b-piste">Piste ✓</span>';
       } else {
         pipeCell='<button class="btn-piste" data-action="convertEnPisteEvent" data-id="'+p.id+'" style="font-size:11px;padding:4px 8px;white-space:nowrap">Convertir en piste</button>';
       }
       const hasPiste=isPiste||inPipe;
-      const statutBadge='<span class="badge '+(EVT_STATUT_BADGE[p.statut||'PrÃ©sent']||'b-present')+'">'+( p.statut||'PrÃ©sent')+'</span>';
+      const statutBadge='<span class="badge '+(EVT_STATUT_BADGE[p.statut||'Présent']||'b-present')+'">'+( p.statut||'Présent')+'</span>';
       return '<tr style="cursor:pointer'+(p.converted?';opacity:0.7':'')+'" data-action="editParticipant" data-id="'+p.id+'" title="Cliquer pour modifier">'
         +'<td style="padding:7px 8px;font-size:12px;font-weight:500">'+p.nom+'</td>'
         +'<td style="padding:7px 8px;font-size:12px;color:var(--tx2)">'+p.societe+'</td>'
-        +'<td style="padding:7px 8px;font-size:12px;color:var(--tx2)">'+(p.poste||'â€”')+'</td>'
-        +'<td style="padding:7px 8px;font-size:11px;color:var(--txm)">'+(p.email||'â€”')+'</td>'
+        +'<td style="padding:7px 8px;font-size:12px;color:var(--tx2)">'+(p.poste||'—')+'</td>'
+        +'<td style="padding:7px 8px;font-size:11px;color:var(--txm)">'+(p.email||'—')+'</td>'
         +'<td style="padding:7px 8px" onclick="event.stopPropagation()">'
           +'<select style="font-size:11px;padding:3px 6px;border-radius:4px;border:0.5px solid var(--bm);background:var(--bg2);color:var(--tx);cursor:pointer" '
             +'data-action="updateParticipantStatut" data-pid="'+p.id+'">'
@@ -1684,7 +1684,7 @@ function renderEvents(){
         +'</td>'
         +'<td style="padding:7px 8px;text-align:right">'
           +(hasPiste
-            ?'<span class="badge b-piste" style="font-size:10px">Piste âœ“</span>'
+            ?'<span class="badge b-piste" style="font-size:10px">Piste ✓</span>'
             :'<button class="btn-piste" style="font-size:11px;padding:4px 8px;white-space:nowrap" data-action="convertEnPisteEvent" data-id="'+p.id+'">Convertir en piste</button>')
         +'</td>'
         +'</tr>';
@@ -1696,7 +1696,7 @@ function renderEvents(){
     card.style.marginBottom='0';
 
     card.innerHTML=
-      // â”€â”€ HEADER (always visible, clickable) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // ── HEADER (always visible, clickable) ──────────────────────────────
       '<div data-action="toggleEvtDetail" data-sid="'+sid+'"'
         +' style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;gap:10px">'
         // Left: name + summary tags
@@ -1718,8 +1718,8 @@ function renderEvents(){
             +(ed.lieu?'<span><i class="ti ti-map-pin" style="font-size:10px;margin-right:3px"></i>'+ed.lieu+'</span>':'')
           +'</div>'
           +'<div style="display:flex;gap:5px;flex-wrap:wrap">'
-            +[{l:'InvitÃ©s',v:inv||'â€”',c:'var(--txm)'},{l:'PrÃ©sents',v:nbPresents,c:color},{l:'Taux participation',v:inv>0?Math.round(nbPresents/inv*100)+'%':ptotal>0?Math.round(nbPresents/ptotal*100)+'%':'â€”',c:'#c97a10'},{l:'Pistes',v:pistesEvt,c:'#A01864'},{l:'Pipeline',v:oppsEvt,c:'#1A7AEA'}]
-            .concat(cout>0?[{l:'CoÃ»t total',v:cout.toLocaleString('fr-FR')+' Ar',c:'#7A1AEA'}]:[]).map(function(k){
+            +[{l:'Invités',v:inv||'—',c:'var(--txm)'},{l:'Présents',v:nbPresents,c:color},{l:'Taux participation',v:inv>0?Math.round(nbPresents/inv*100)+'%':ptotal>0?Math.round(nbPresents/ptotal*100)+'%':'—',c:'#c97a10'},{l:'Pistes',v:pistesEvt,c:'#A01864'},{l:'Pipeline',v:oppsEvt,c:'#1A7AEA'}]
+            .concat(cout>0?[{l:'Coût total',v:cout.toLocaleString('fr-FR')+' Ar',c:'#7A1AEA'}]:[]).map(function(k){
               return '<div style="display:flex;flex-direction:column;align-items:center;padding:2px 7px;background:var(--bg);border:0.5px solid var(--bl);border-radius:6px;min-width:52px">'
                 +'<div style="font-size:15px;font-weight:600;line-height:1.3;color:'+k.c+'">'+k.v+'</div>'
                 +'<div style="font-size:10px;color:var(--txm);white-space:nowrap">'+k.l+'</div>'
@@ -1732,29 +1732,29 @@ function renderEvents(){
           +' style="font-size:16px;color:var(--tx2);transition:transform .2s;flex-shrink:0"></i>'
       +'</div>'
 
-      // â”€â”€ DETAIL PANEL (collapsed by default) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // ── DETAIL PANEL (collapsed by default) ─────────────────────────────
       +'<div id="'+sid+'" style="display:none;margin-top:14px;padding-top:14px;border-top:0.5px solid var(--bl)">'
         // Config fields
         +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
           +'<div class="efield"><label>Date</label><input type="date" value="'+(ed.date||'')+'" data-evt="'+e+'" data-field="date" class="evt-input"></div>'
-          +'<div class="efield"><label>Lieu / Venue</label><input type="text" value="'+(ed.lieu||'')+'" placeholder="HÃ´tel, salleâ€¦" data-evt="'+e+'" data-field="lieu" class="evt-input"></div>'
+          +'<div class="efield"><label>Lieu / Venue</label><input type="text" value="'+(ed.lieu||'')+'" placeholder="Hôtel, salle…" data-evt="'+e+'" data-field="lieu" class="evt-input"></div>'
         +'</div>'
         +'<div class="evt-fields" style="margin-bottom:14px">'
-          +'<div class="efield"><label>InvitÃ©s</label><input type="number" min="0" value="'+(ed.invites||'')+'" placeholder="0" data-evt="'+e+'" data-field="invites" class="evt-input"></div>'
-          +'<div class="efield"><label>Goodies</label><input type="text" value="'+(ed.goodies||'')+'" placeholder="T-shirt, clÃ© USBâ€¦" data-evt="'+e+'" data-field="goodies" class="evt-input"></div>'
-          +'<div class="efield"><label>CoÃ»t (Ar)</label><input type="number" min="0" value="'+(ed.cout||'')+'" placeholder="0" data-evt="'+e+'" data-field="cout" class="evt-input"></div>'
+          +'<div class="efield"><label>Invités</label><input type="number" min="0" value="'+(ed.invites||'')+'" placeholder="0" data-evt="'+e+'" data-field="invites" class="evt-input"></div>'
+          +'<div class="efield"><label>Goodies</label><input type="text" value="'+(ed.goodies||'')+'" placeholder="T-shirt, clé USB…" data-evt="'+e+'" data-field="goodies" class="evt-input"></div>'
+          +'<div class="efield"><label>Coût (Ar)</label><input type="number" min="0" value="'+(ed.cout||'')+'" placeholder="0" data-evt="'+e+'" data-field="cout" class="evt-input"></div>'
         +'</div>'
         // Participants table
         +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">'
           +'<div style="font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.05em">'
-            +nbInvites+' participants Â· '+nbPresents+' prÃ©sents Â· '+nbConfirmes+' confirmÃ©s Â· '+nbAbsents+' absents'
+            +nbInvites+' participants · '+nbPresents+' présents · '+nbConfirmes+' confirmés · '+nbAbsents+' absents'
           +'</div>'
           +'<button class="btn-piste" style="font-size:11px;padding:4px 10px" data-action="addParticipant" data-id="'+e+'"><i class="ti ti-user-plus" style="font-size:11px;margin-right:4px"></i>Ajouter</button>'
         +'</div>'
         +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">'
           +'<thead><tr>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Nom</th>'
-            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">SociÃ©tÃ©</th>'
+            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Société</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Poste</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Email</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Statut</th>'
@@ -1786,24 +1786,24 @@ function renderStatsEvents(){
   const evts=getEvtNames();
   const el=document.getElementById('se-participation');
   if(!el)return;
-  if(!evts.length){el.innerHTML='<div class="empty">Aucun Ã©vÃ©nement</div>';return;}
+  if(!evts.length){el.innerHTML='<div class="empty">Aucun événement</div>';return;}
   const COLORS=['#A01864','#1A7AEA','#1AAE6A','#c97a10','#7A1AEA'];
 
   const rows=evts.map(function(e,i){
     const ed=evtData[e]||{};
     const parts=participants.filter(function(p){return p.evtnom===e;});
     const inv=parseInt(ed.invites)||0;
-    const pres=parts.filter(function(p){return p.statut==='PrÃ©sent';}).length;
-    const conf=parts.filter(function(p){return p.statut==='ConfirmÃ©';}).length;
+    const pres=parts.filter(function(p){return p.statut==='Présent';}).length;
+    const conf=parts.filter(function(p){return p.statut==='Confirmé';}).length;
     const abs=parts.filter(function(p){return p.statut==='Absent';}).length;
     const pist=pistes.filter(function(p){return p.evtnom===e;}).length;
     const pipe=opps.filter(function(o){return o.evtnom===e&&PIPE_STAGES.includes(o.stage);}).length;
-    const txPres=inv>0?Math.round(pres/inv*100)+'%':parts.length>0?Math.round(pres/parts.length*100)+'%':'â€”';
-    const txConv=pres>0?Math.round(pist/pres*100)+'%':'â€”';
+    const txPres=inv>0?Math.round(pres/inv*100)+'%':parts.length>0?Math.round(pres/parts.length*100)+'%':'—';
+    const txConv=pres>0?Math.round(pist/pres*100)+'%':'—';
     const color=COLORS[i%COLORS.length];
     return '<tr>'
       +'<td style="padding:8px 10px;font-weight:600;color:'+color+'">'+e+'</td>'
-      +'<td style="padding:8px 10px;text-align:center">'+(inv||'â€”')+'</td>'
+      +'<td style="padding:8px 10px;text-align:center">'+(inv||'—')+'</td>'
       +'<td style="padding:8px 10px;text-align:center;font-weight:600">'+pres+'</td>'
       +'<td style="padding:8px 10px;text-align:center">'+conf+'</td>'
       +'<td style="padding:8px 10px;text-align:center">'+abs+'</td>'
@@ -1816,12 +1816,12 @@ function renderStatsEvents(){
 
   el.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'
     +'<thead><tr style="border-bottom:2px solid var(--bl)">'
-    +'<th style="text-align:left;padding:8px 10px;font-size:11px;color:var(--tx2);text-transform:uppercase">Ã‰vÃ©nement</th>'
-    +'<th style="padding:8px 10px;font-size:11px;color:var(--tx2);text-transform:uppercase;text-align:center">InvitÃ©s</th>'
-    +'<th style="padding:8px 10px;font-size:11px;color:var(--tx2);text-transform:uppercase;text-align:center">PrÃ©sents</th>'
-    +'<th style="padding:8px 10px;font-size:11px;color:var(--tx2);text-transform:uppercase;text-align:center">ConfirmÃ©s</th>'
+    +'<th style="text-align:left;padding:8px 10px;font-size:11px;color:var(--tx2);text-transform:uppercase">Événement</th>'
+    +'<th style="padding:8px 10px;font-size:11px;color:var(--tx2);text-transform:uppercase;text-align:center">Invités</th>'
+    +'<th style="padding:8px 10px;font-size:11px;color:var(--tx2);text-transform:uppercase;text-align:center">Présents</th>'
+    +'<th style="padding:8px 10px;font-size:11px;color:var(--tx2);text-transform:uppercase;text-align:center">Confirmés</th>'
     +'<th style="padding:8px 10px;font-size:11px;color:var(--tx2);text-transform:uppercase;text-align:center">Absents</th>'
-    +'<th style="padding:8px 10px;font-size:11px;color:#c97a10;text-transform:uppercase;text-align:center">Tx prÃ©sence</th>'
+    +'<th style="padding:8px 10px;font-size:11px;color:#c97a10;text-transform:uppercase;text-align:center">Tx présence</th>'
     +'<th style="padding:8px 10px;font-size:11px;color:#A01864;text-transform:uppercase;text-align:center">Pistes</th>'
     +'<th style="padding:8px 10px;font-size:11px;color:#1A7AEA;text-transform:uppercase;text-align:center">Pipeline</th>'
     +'<th style="padding:8px 10px;font-size:11px;color:#1AAE6A;text-transform:uppercase;text-align:center">Tx conv.</th>'
@@ -1834,9 +1834,9 @@ function renderStatsEvents(){
   charts['funnel-evt']=new Chart(document.getElementById('ch-funnel-evt'),{
     type:'bar',
     data:{
-      labels:evts.map(function(e){return e.length>18?e.slice(0,16)+'â€¦':e;}),
+      labels:evts.map(function(e){return e.length>18?e.slice(0,16)+'…':e;}),
       datasets:[
-        {label:'PrÃ©sents',data:evts.map(function(e){return participants.filter(function(p){return p.evtnom===e&&p.statut==='PrÃ©sent';}).length;}),backgroundColor:'#c97a10',borderRadius:3},
+        {label:'Présents',data:evts.map(function(e){return participants.filter(function(p){return p.evtnom===e&&p.statut==='Présent';}).length;}),backgroundColor:'#c97a10',borderRadius:3},
         {label:'Pistes',data:evts.map(function(e){return pistes.filter(function(p){return p.evtnom===e;}).length;}),backgroundColor:'#A01864',borderRadius:3},
         {label:'Pipeline',data:evts.map(function(e){return opps.filter(function(o){return o.evtnom===e&&PIPE_STAGES.includes(o.stage);}).length;}),backgroundColor:'#1A7AEA',borderRadius:3},
         {label:'Concluants',data:evts.map(function(e){return opps.filter(function(o){return o.evtnom===e&&o.stage==='Concluant';}).length;}),backgroundColor:'#1AAE6A',borderRadius:3},
@@ -1853,7 +1853,7 @@ function renderStatsEvents(){
     var sel=document.getElementById(selId);
     if(!sel)return;
     var cur=sel.value;
-    sel.innerHTML='<option value="">Tous les Ã©vÃ©nements</option>'
+    sel.innerHTML='<option value="">Tous les événements</option>'
       +evts.map(function(e){return'<option value="'+e+'">'+e+'</option>';}).join('');
     if(cur&&evts.includes(cur))sel.value=cur;
   });
@@ -1861,39 +1861,39 @@ function renderStatsEvents(){
   var socEvtFilter=(document.getElementById('se-soc-evt')||{value:''}).value;
   var indEvtFilter=(document.getElementById('se-ind-evt')||{value:''}).value;
 
-  // â”€â”€ Par sociÃ©tÃ© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Par société ────────────────────────────────────────────────────────
   var socEl=document.getElementById('se-societes');
   if(socEl){
     var filtParts=participants.filter(function(p){return !socEvtFilter||p.evtnom===socEvtFilter;});
     var socMap={};
     filtParts.forEach(function(p){
-      var s=p.societe||'â€”';
+      var s=p.societe||'—';
       if(!socMap[s])socMap[s]={nom:s,total:0,present:0,confirme:0,absent:0,excuse:0,events:new Set()};
       socMap[s].total++;
       socMap[s].events.add(p.evtnom);
-      var st=p.statut||'PrÃ©sent';
-      if(st==='PrÃ©sent')socMap[s].present++;
-      else if(st==='ConfirmÃ©')socMap[s].confirme++;
+      var st=p.statut||'Présent';
+      if(st==='Présent')socMap[s].present++;
+      else if(st==='Confirmé')socMap[s].confirme++;
       else if(st==='Absent')socMap[s].absent++;
-      else if(st==='ExcusÃ©')socMap[s].excuse++;
+      else if(st==='Excusé')socMap[s].excuse++;
     });
     var socs=Object.values(socMap).sort(function(a,b){
       var ta=a.total>0?b.present/b.total-a.present/a.total:0;
       return ta!==0?ta:b.present-a.present;
     });
     if(!socs.length){
-      socEl.innerHTML='<div class="empty" style="padding:1.5rem">Aucune donnÃ©e</div>';
+      socEl.innerHTML='<div class="empty" style="padding:1.5rem">Aucune donnée</div>';
     } else {
       var maxPres=Math.max.apply(null,socs.map(function(s){return s.present;}));
       socEl.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
         +'<thead><tr style="border-bottom:2px solid var(--bl)">'
-        +'<th style="text-align:left;padding:7px 10px;font-size:11px;color:var(--tx2);text-transform:uppercase">SociÃ©tÃ©</th>'
+        +'<th style="text-align:left;padding:7px 10px;font-size:11px;color:var(--tx2);text-transform:uppercase">Société</th>'
         +'<th style="padding:7px 10px;font-size:11px;color:var(--tx2);text-transform:uppercase;text-align:center">Events</th>'
-        +'<th style="padding:7px 10px;font-size:11px;color:var(--tx2);text-transform:uppercase;text-align:center">InvitÃ©s</th>'
-        +'<th style="padding:7px 10px;font-size:11px;color:#1AAE6A;text-transform:uppercase;text-align:center">PrÃ©sents</th>'
-        +'<th style="padding:7px 10px;font-size:11px;color:#1A7AEA;text-transform:uppercase;text-align:center">ConfirmÃ©s</th>'
+        +'<th style="padding:7px 10px;font-size:11px;color:var(--tx2);text-transform:uppercase;text-align:center">Invités</th>'
+        +'<th style="padding:7px 10px;font-size:11px;color:#1AAE6A;text-transform:uppercase;text-align:center">Présents</th>'
+        +'<th style="padding:7px 10px;font-size:11px;color:#1A7AEA;text-transform:uppercase;text-align:center">Confirmés</th>'
         +'<th style="padding:7px 10px;font-size:11px;color:#E24B4A;text-transform:uppercase;text-align:center">Absents</th>'
-        +'<th style="padding:7px 10px;font-size:11px;color:#c97a10;text-transform:uppercase;text-align:center">Tx prÃ©sence</th>'
+        +'<th style="padding:7px 10px;font-size:11px;color:#c97a10;text-transform:uppercase;text-align:center">Tx présence</th>'
         +'<th style="padding:7px 10px;font-size:11px;color:var(--ac);text-transform:uppercase;text-align:center">Engagement</th>'
         +'</tr></thead><tbody>'
         +socs.map(function(s){
@@ -1911,14 +1911,14 @@ function renderStatsEvents(){
               +'<th style="text-align:left;padding:5px 18px;font-size:10px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Nom</th>'
               +'<th style="text-align:left;padding:5px 10px;font-size:10px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Poste</th>'
               +'<th style="text-align:center;padding:5px 10px;font-size:10px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Statut</th>'
-              +'<th style="text-align:left;padding:5px 10px;font-size:10px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Ã‰vÃ©nement</th>'
+              +'<th style="text-align:left;padding:5px 10px;font-size:10px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Événement</th>'
               +'</tr></thead><tbody>'
               +socParts.map(function(p){
-                var bc=EVT_STATUT_BADGE[p.statut||'PrÃ©sent']||'b-present';
+                var bc=EVT_STATUT_BADGE[p.statut||'Présent']||'b-present';
                 return '<tr>'
                   +'<td style="padding:5px 18px;font-size:12px;font-weight:500">'+p.nom+'</td>'
-                  +'<td style="padding:5px 10px;font-size:11px;color:var(--tx2)">'+(p.poste||'â€”')+'</td>'
-                  +'<td style="padding:5px 10px;text-align:center"><span class="badge '+bc+'">'+(p.statut||'PrÃ©sent')+'</span></td>'
+                  +'<td style="padding:5px 10px;font-size:11px;color:var(--tx2)">'+(p.poste||'—')+'</td>'
+                  +'<td style="padding:5px 10px;text-align:center"><span class="badge '+bc+'">'+(p.statut||'Présent')+'</span></td>'
                   +'<td style="padding:5px 10px;font-size:11px;color:var(--txm)">'+p.evtnom+'</td>'
                   +'</tr>';
               }).join('')
@@ -1937,7 +1937,7 @@ function renderStatsEvents(){
                   +'<div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">'
                     +'<div style="height:100%;width:'+bar+'%;background:var(--ac);border-radius:3px"></div>'
                   +'</div>'
-                  +'<span style="font-size:10px;color:var(--txm);white-space:nowrap">'+s.present+' prÃ©s.</span>'
+                  +'<span style="font-size:10px;color:var(--txm);white-space:nowrap">'+s.present+' prés.</span>'
                 +'</div>'
               +'</td>'
               +'</tr>'+detail;
@@ -1947,7 +1947,7 @@ function renderStatsEvents(){
     }
   }
 
-  // â”€â”€ Par individu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Par individu ───────────────────────────────────────────────────────
   var indEl=document.getElementById('se-individus');
   if(indEl){
     var filtParts2=participants.filter(function(p){return !indEvtFilter||p.evtnom===indEvtFilter;});
@@ -1957,9 +1957,9 @@ function renderStatsEvents(){
       if(!indMap[key])indMap[key]={nom:p.nom,societe:p.societe,poste:p.poste||'',email:p.email||'',total:0,present:0,confirme:0,absent:0,events:[]};
       indMap[key].total++;
       indMap[key].events.push(p.evtnom);
-      var st=p.statut||'PrÃ©sent';
-      if(st==='PrÃ©sent')indMap[key].present++;
-      else if(st==='ConfirmÃ©')indMap[key].confirme++;
+      var st=p.statut||'Présent';
+      if(st==='Présent')indMap[key].present++;
+      else if(st==='Confirmé')indMap[key].confirme++;
       else if(st==='Absent')indMap[key].absent++;
     });
     var inds=Object.values(indMap).sort(function(a,b){
@@ -1967,17 +1967,17 @@ function renderStatsEvents(){
       return diff!==0?diff:b.present-a.present;
     });
     if(!inds.length){
-      indEl.innerHTML='<div class="empty" style="padding:1.5rem">Aucune donnÃ©e</div>';
+      indEl.innerHTML='<div class="empty" style="padding:1.5rem">Aucune donnée</div>';
     } else {
       indEl.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
         +'<thead><tr style="border-bottom:2px solid var(--bl)">'
         +'<th style="text-align:left;padding:7px 10px;font-size:11px;color:var(--tx2);text-transform:uppercase">Nom</th>'
-        +'<th style="text-align:left;padding:7px 10px;font-size:11px;color:var(--tx2);text-transform:uppercase">SociÃ©tÃ©</th>'
+        +'<th style="text-align:left;padding:7px 10px;font-size:11px;color:var(--tx2);text-transform:uppercase">Société</th>'
         +'<th style="padding:7px 10px;font-size:11px;color:var(--tx2);text-transform:uppercase;text-align:center">Events</th>'
-        +'<th style="padding:7px 10px;font-size:11px;color:#1AAE6A;text-transform:uppercase;text-align:center">PrÃ©sent(s)</th>'
-        +'<th style="padding:7px 10px;font-size:11px;color:#1A7AEA;text-transform:uppercase;text-align:center">ConfirmÃ©(s)</th>'
+        +'<th style="padding:7px 10px;font-size:11px;color:#1AAE6A;text-transform:uppercase;text-align:center">Présent(s)</th>'
+        +'<th style="padding:7px 10px;font-size:11px;color:#1A7AEA;text-transform:uppercase;text-align:center">Confirmé(s)</th>'
         +'<th style="padding:7px 10px;font-size:11px;color:#E24B4A;text-transform:uppercase;text-align:center">Absent(s)</th>'
-        +'<th style="padding:7px 10px;font-size:11px;color:#c97a10;text-transform:uppercase;text-align:center">Tx prÃ©sence</th>'
+        +'<th style="padding:7px 10px;font-size:11px;color:#c97a10;text-transform:uppercase;text-align:center">Tx présence</th>'
         +'</tr></thead><tbody>'
         +inds.map(function(p){
           var tx=p.total>0?Math.round(p.present/p.total*100):0;
@@ -1999,14 +1999,14 @@ function renderStatsEvents(){
   // Comparaison chart
   destroyChart('compare-evt');
   const evtInv=evts.map(function(e){return parseInt((evtData[e]||{}).invites)||participants.filter(function(p){return p.evtnom===e;}).length;});
-  const evtPr=evts.map(function(e){return participants.filter(function(p){return p.evtnom===e&&p.statut==='PrÃ©sent';}).length;});
+  const evtPr=evts.map(function(e){return participants.filter(function(p){return p.evtnom===e&&p.statut==='Présent';}).length;});
   charts['compare-evt']=new Chart(document.getElementById('ch-compare-evt'),{
     type:'bar',
     data:{
-      labels:evts.map(function(e){return e.length>18?e.slice(0,16)+'â€¦':e;}),
+      labels:evts.map(function(e){return e.length>18?e.slice(0,16)+'…':e;}),
       datasets:[
-        {label:'InvitÃ©s',data:evtInv,backgroundColor:'rgba(136,135,128,0.4)',borderRadius:3},
-        {label:'PrÃ©sents',data:evtPr,backgroundColor:'#A01864',borderRadius:3},
+        {label:'Invités',data:evtInv,backgroundColor:'rgba(136,135,128,0.4)',borderRadius:3},
+        {label:'Présents',data:evtPr,backgroundColor:'#A01864',borderRadius:3},
       ]
     },
     options:{responsive:true,maintainAspectRatio:false,
@@ -2038,7 +2038,7 @@ function renderStatsCrm(){
   destroyChart('pipeline-stages');
   charts['pipeline-stages']=new Chart(document.getElementById('ch-pipeline-stages'),{
     type:'bar',
-    data:{labels:PIPE_STAGES.map(function(s){return s.length>14?s.slice(0,12)+'â€¦':s;}),
+    data:{labels:PIPE_STAGES.map(function(s){return s.length>14?s.slice(0,12)+'…':s;}),
       datasets:[{data:PIPE_STAGES.map(function(s){return opps.filter(function(o){return o.stage===s;}).length;}),
         backgroundColor:['#1A7AEA','#2d4baa','#7A1AEA','#5b21b6'],borderRadius:4}]},
     options:{responsive:true,maintainAspectRatio:false,
@@ -2047,7 +2047,7 @@ function renderStatsCrm(){
               y:{ticks:{font:{size:10},color:'#888780'},grid:{color:'rgba(128,128,128,0.12)'}}}}
   });
 
-  // TerminÃ©s doughnut
+  // Terminés doughnut
   destroyChart('pipeline-pie');
   charts['pipeline-pie']=new Chart(document.getElementById('ch-pipeline-pie'),{
     type:'doughnut',
@@ -2076,7 +2076,7 @@ function renderStatsCrm(){
               y:{ticks:{font:{size:10},color:'#888780'},grid:{color:'rgba(128,128,128,0.12)'}}}}
   });
 
-  // DÃ©tail commerciaux
+  // Détail commerciaux
   const CC=['#A01864','#1A7AEA','#1AAE6A'];
   // Mailing stats
   const mlEl=document.getElementById('crm-mailing-stats');
@@ -2086,26 +2086,26 @@ function renderStatsCrm(){
     } else {
       mlEl.innerHTML=mailings.map(function(m){
         const total=m.contacts.length;
-        const envoye=m.contacts.filter(function(c){return c.statut!=='Non envoyÃ©';}).length;
-        const repondu=m.contacts.filter(function(c){return c.statut==='RÃ©pondu';}).length;
+        const envoye=m.contacts.filter(function(c){return c.statut!=='Non envoyé';}).length;
+        const repondu=m.contacts.filter(function(c){return c.statut==='Répondu';}).length;
         const nbPistes=m.contacts.filter(function(c){return c.piste_id;}).length;
         const concluants=m.contacts.filter(function(c){
           if(!c.piste_id)return false;
           return opps.some(function(o){return o.piste_id===c.piste_id&&o.stage==='Concluant';});
         }).length;
-        const txEnv=total>0?Math.round(envoye/total*100)+'%':'â€”';
-        const txRep=total>0?Math.round(repondu/total*100)+'%':'â€”';
-        const txConv=nbPistes>0?Math.round(concluants/nbPistes*100)+'%':'â€”';
+        const txEnv=total>0?Math.round(envoye/total*100)+'%':'—';
+        const txRep=total>0?Math.round(repondu/total*100)+'%':'—';
+        const txConv=nbPistes>0?Math.round(concluants/nbPistes*100)+'%':'—';
         return '<div class="icard" style="margin-bottom:8px">'
           +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
             +'<div style="flex:1;min-width:150px">'
               +'<div style="font-size:13px;font-weight:600"><i class="ti ti-mail" style="color:var(--ac);margin-right:5px"></i>'+m.nom+'</div>'
-              +(m.assigne?'<div style="font-size:11px;color:var(--tx2);margin-top:2px">'+m.assigne+(m.date?' Â· '+new Date(m.date+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}):'')+'</div>':'')
+              +(m.assigne?'<div style="font-size:11px;color:var(--tx2);margin-top:2px">'+m.assigne+(m.date?' · '+new Date(m.date+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}):'')+'</div>':'')
             +'</div>'
             +'<div style="display:flex;gap:5px;flex-wrap:wrap">'
-              +[{l:'Contacts',v:total,c:'var(--txm)'},{l:'EnvoyÃ©s',v:envoye,c:'#1A7AEA'},
-                {l:'Tx envoi',v:txEnv,c:'#1A7AEA'},{l:'RÃ©pondus',v:repondu,c:'#c97a10'},
-                {l:'Tx rÃ©ponse',v:txRep,c:'#c97a10'},{l:'Pistes',v:nbPistes,c:'#A01864'},
+              +[{l:'Contacts',v:total,c:'var(--txm)'},{l:'Envoyés',v:envoye,c:'#1A7AEA'},
+                {l:'Tx envoi',v:txEnv,c:'#1A7AEA'},{l:'Répondus',v:repondu,c:'#c97a10'},
+                {l:'Tx réponse',v:txRep,c:'#c97a10'},{l:'Pistes',v:nbPistes,c:'#A01864'},
                 {l:'Concluants',v:concluants,c:'#1AAE6A'},{l:'Tx concluant',v:txConv,c:'#1AAE6A'}]
               .map(function(k){
                 return '<div style="display:flex;flex-direction:column;align-items:center;padding:2px 7px;background:var(--bg);border:0.5px solid var(--bl);border-radius:6px;min-width:52px">'
@@ -2126,7 +2126,7 @@ function renderStatsCrm(){
     const myO=opps.filter(function(o){return o.assigne===c;});
     const act=myO.filter(function(o){return PIPE_STAGES.includes(o.stage);}).length;
     const concl=myO.filter(function(o){return o.stage==='Concluant';}).length;
-    const ac=myO.filter(function(o){return o.stage==='Ã€ creuser';}).length;
+    const ac=myO.filter(function(o){return o.stage==='À creuser';}).length;
     const vl=myO.filter(function(o){return PIPE_STAGES.includes(o.stage);}).reduce(function(s,o){return s+(parseInt(o.valeur)||0);},0);
     return '<div class="icard" style="border-left:3px solid '+color+';margin-bottom:10px">'
       +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
@@ -2134,7 +2134,7 @@ function renderStatsCrm(){
         +'<div style="font-size:14px;font-weight:600;flex:1">'+c+'</div>'
         +'<div style="display:flex;gap:5px;flex-wrap:wrap">'
           +[{l:'Pistes',v:myP,c:'var(--txm)'},{l:'Actifs',v:act,c:color},
-            {l:'Concluants',v:concl,c:'#1AAE6A'},{l:'Ã€ creuser',v:ac,c:'#c97a10'},
+            {l:'Concluants',v:concl,c:'#1AAE6A'},{l:'À creuser',v:ac,c:'#c97a10'},
             ...(vl>0?[{l:'Pipeline Ar',v:vl.toLocaleString('fr-FR'),c:'#7A1AEA'}]:[])
           ].map(function(k){
             return '<div style="display:flex;flex-direction:column;align-items:center;padding:2px 8px;background:var(--bg);border:0.5px solid var(--bl);border-radius:6px;min-width:56px">'
@@ -2164,7 +2164,7 @@ function exportCSV(){
   a.click();
 }
 
-// â”€â”€ EVENT DELEGATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── EVENT DELEGATION ───────────────────────────────────────────────────────
 document.addEventListener('click',function(e){
   const btn=e.target.closest('[data-action]');
   if(!btn)return;
@@ -2253,9 +2253,9 @@ document.addEventListener('keydown',function(e){
 });
 
 
-// â”€â”€ MAILING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-const MAIL_STATUS=['Non envoyÃ©','EnvoyÃ©','Ouvert','RÃ©pondu','Sans rÃ©ponse'];
-const MAIL_STATUS_BADGE={'Non envoyÃ©':'b-mailing','EnvoyÃ©':'b-envoye','Ouvert':'b-ouvert','RÃ©pondu':'b-repondu','Sans rÃ©ponse':'b-sans-rep'};
+// ── MAILING ────────────────────────────────────────────────────────────────
+const MAIL_STATUS=['Non envoyé','Envoyé','Ouvert','Répondu','Sans réponse'];
+const MAIL_STATUS_BADGE={'Non envoyé':'b-mailing','Envoyé':'b-envoye','Ouvert':'b-ouvert','Répondu':'b-repondu','Sans réponse':'b-sans-rep'};
 let currentMailingId=null, csvParsedData=[];
 
 function renderMailing(){
@@ -2269,30 +2269,30 @@ function renderMailing(){
   mailings.forEach(function(m){
     const sid='ml_'+m.id;
     const totalC=m.contacts.length;
-    const envoye=m.contacts.filter(function(c){return c.statut!=='Non envoyÃ©';}).length;
-    const repondu=m.contacts.filter(function(c){return c.statut==='RÃ©pondu';}).length;
+    const envoye=m.contacts.filter(function(c){return c.statut!=='Non envoyé';}).length;
+    const repondu=m.contacts.filter(function(c){return c.statut==='Répondu';}).length;
     const piste=m.contacts.filter(function(c){return c.piste_id;}).length;
-    const txEnv=totalC>0?Math.round(envoye/totalC*100)+'%':'â€”';
-    const txRep=totalC>0?Math.round(repondu/totalC*100)+'%':'â€”';
+    const txEnv=totalC>0?Math.round(envoye/totalC*100)+'%':'—';
+    const txRep=totalC>0?Math.round(repondu/totalC*100)+'%':'—';
 
     const card=document.createElement('div');
     card.className='icard';
     card.style.marginBottom='0';
     card.innerHTML=
-      // Header â€” always visible, clickable to expand
+      // Header — always visible, clickable to expand
       '<div data-action="toggleEvtDetail" data-sid="'+sid+'"'
         +' style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;flex-wrap:wrap">'
         +'<div style="flex:1;min-width:0">'
           +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
             +'<i class="ti ti-mail" style="color:var(--ac);font-size:14px;flex-shrink:0"></i>'
             +'<span style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+m.nom+'</span>'
-            +(m.assigne?'<span style="font-size:11px;color:#1AAE6A;flex-shrink:0">Â· '+m.assigne+'</span>':'')
+            +(m.assigne?'<span style="font-size:11px;color:#1AAE6A;flex-shrink:0">· '+m.assigne+'</span>':'')
             +(m.date?'<span style="font-size:11px;color:var(--tx2);flex-shrink:0"><i class="ti ti-calendar" style="font-size:10px;margin-right:3px"></i>'+new Date(m.date+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})+'</span>':'')
           +'</div>'
           +'<div style="display:flex;gap:6px;flex-wrap:wrap">'
-            +[{l:'Contacts',v:totalC,c:'var(--txm)'},{l:'EnvoyÃ©s',v:envoye,c:'#1A7AEA'},
-              {l:'Tx envoi',v:txEnv,c:'#1A7AEA'},{l:'RÃ©pondus',v:repondu,c:'#1AAE6A'},
-              {l:'Tx rÃ©ponse',v:txRep,c:'#1AAE6A'},{l:'Pistes',v:piste,c:'var(--ac)'}]
+            +[{l:'Contacts',v:totalC,c:'var(--txm)'},{l:'Envoyés',v:envoye,c:'#1A7AEA'},
+              {l:'Tx envoi',v:txEnv,c:'#1A7AEA'},{l:'Répondus',v:repondu,c:'#1AAE6A'},
+              {l:'Tx réponse',v:txRep,c:'#1AAE6A'},{l:'Pistes',v:piste,c:'var(--ac)'}]
             .map(function(k){
               return '<div style="display:flex;flex-direction:column;align-items:center;padding:2px 7px;background:var(--bg);border:0.5px solid var(--bl);border-radius:6px;min-width:52px">'
                 +'<div style="font-size:15px;font-weight:600;line-height:1.3;color:'+k.c+'">'+k.v+'</div>'
@@ -2314,7 +2314,7 @@ function renderMailing(){
         +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
           +'<thead><tr>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:18%">Nom</th>'
-            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:15%">SociÃ©tÃ©</th>'
+            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:15%">Société</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:12%">Poste</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:15%">Email</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:12%">Statut</th>'
@@ -2327,8 +2327,8 @@ function renderMailing(){
               return '<tr style="cursor:pointer" data-action="editMailingContact" data-mailing-id="'+m.id+'" data-contact-id="'+c.id+'" title="Cliquer pour modifier">'
                 +'<td style="padding:7px 8px;font-weight:500">'+c.nom+'</td>'
                 +'<td style="padding:7px 8px;color:var(--tx2)">'+c.societe+'</td>'
-                +'<td style="padding:7px 8px;color:var(--tx2)">'+(c.poste||'â€”')+'</td>'
-                +'<td style="padding:7px 8px;font-size:11px;color:var(--txm)">'+(c.email||'â€”')+'</td>'
+                +'<td style="padding:7px 8px;color:var(--tx2)">'+(c.poste||'—')+'</td>'
+                +'<td style="padding:7px 8px;font-size:11px;color:var(--txm)">'+(c.email||'—')+'</td>'
                 +'<td style="padding:7px 8px" onclick="event.stopPropagation()">'
                   +'<select style="font-size:11px;padding:3px 6px;border-radius:4px;border:0.5px solid var(--bm);background:var(--bg2);color:var(--tx);cursor:pointer" '
                     +'data-action="updateMailingStatus" data-mailing-id="'+m.id+'" data-contact-id="'+c.id+'">'
@@ -2337,7 +2337,7 @@ function renderMailing(){
                 +'</td>'
                 +'<td style="padding:7px 8px;text-align:right;white-space:nowrap">'
                   +(hasPiste
-                    ?'<span class="badge b-ouvert" style="font-size:10px">Piste âœ“</span>'
+                    ?'<span class="badge b-ouvert" style="font-size:10px">Piste ✓</span>'
                     :'<button class="btn-piste" style="font-size:11px;padding:4px 8px" data-action="mailingToPiste" data-mailing-id="'+m.id+'" data-contact-id="'+c.id+'">Convertir en piste</button>')
                   +'<button class="abtn" data-action="delMailingContact" data-mailing-id="'+m.id+'" data-contact-id="'+c.id+'" style="padding:2px 4px;margin-left:4px"><i class="ti ti-trash" style="font-size:12px"></i></button>'
                 +'</td>'
@@ -2385,7 +2385,7 @@ function delMailing(id){
 function openAddMailingContactModal(mailingId){
   currentMailingId=mailingId;
   const m=mailings.find(function(x){return x.id===mailingId;});
-  document.getElementById('amc-title').textContent='Ajouter un contact â€” '+(m?m.nom:'');
+  document.getElementById('amc-title').textContent='Ajouter un contact — '+(m?m.nom:'');
   ['mc-nom','mc-societe','mc-poste','mc-email','mc-tel'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('mc-secteur').value='';
   document.getElementById('add-mailing-contact-modal').style.display='flex';
@@ -2395,7 +2395,7 @@ function saveMailingContact(){
   const nom=document.getElementById('mc-nom').value.trim();
   const societe=document.getElementById('mc-societe').value.trim();
   const email=document.getElementById('mc-email').value.trim();
-  if(!nom||!societe){alert('Nom et sociÃ©tÃ© requis.');return;}
+  if(!nom||!societe){alert('Nom et société requis.');return;}
   const m=mailings.find(function(x){return x.id===currentMailingId;});
   if(!m)return;
   m.contacts.push({
@@ -2404,7 +2404,7 @@ function saveMailingContact(){
     secteur:document.getElementById('mc-secteur').value,
     email:email,
     tel:document.getElementById('mc-tel').value.trim(),
-    statut:'Non envoyÃ©',piste_id:null
+    statut:'Non envoyé',piste_id:null
   });
   persist();closeModals();renderMailing();
 }
@@ -2440,13 +2440,13 @@ document.addEventListener('change',function(e){
         };
         return{
           id:'mc_'+uid()+'_'+i,
-          nom:get(['nom','name','prenom','prÃ©nom'])||('Contact '+(i+1)),
+          nom:get(['nom','name','prenom','prénom'])||('Contact '+(i+1)),
           societe:get(['soci','company','entreprise'])||'',
           poste:get(['poste','titre','title','fonction'])||'',
           secteur:get(['secteur','sector','industrie'])||'',
           email:get(['email','mail','courriel'])||'',
           tel:get(['tel','phone','portable','mobile'])||'',
-          statut:'Non envoyÃ©',piste_id:null
+          statut:'Non envoyé',piste_id:null
         };
       }).filter(function(c){return c.nom;});
       document.getElementById('csv-count').textContent=csvParsedData.length;
@@ -2458,10 +2458,10 @@ document.addEventListener('change',function(e){
       document.getElementById('csv-preview-table').innerHTML=
         '<table style="width:100%;border-collapse:collapse"><thead><tr>'
         +'<th style="text-align:left;padding:4px 6px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Nom</th>'
-        +'<th style="text-align:left;padding:4px 6px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">SociÃ©tÃ©</th>'
+        +'<th style="text-align:left;padding:4px 6px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Société</th>'
         +'<th style="text-align:left;padding:4px 6px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Email</th>'
         +'</tr></thead><tbody>'+preview+'</tbody></table>'
-        +(csvParsedData.length>5?'<div style="font-size:11px;color:var(--txm);padding:4px 6px">â€¦ et '+(csvParsedData.length-5)+' autres</div>':'');
+        +(csvParsedData.length>5?'<div style="font-size:11px;color:var(--txm);padding:4px 6px">… et '+(csvParsedData.length-5)+' autres</div>':'');
       document.getElementById('csv-preview').style.display='block';
     };
     reader.readAsText(file,'UTF-8');
@@ -2478,7 +2478,7 @@ document.addEventListener('change',function(e){
 });
 
 function importMailingCSV(){
-  if(!csvParsedData.length){alert('Aucun contact Ã  importer. VÃ©rifiez le fichier CSV.');return;}
+  if(!csvParsedData.length){alert('Aucun contact à importer. Vérifiez le fichier CSV.');return;}
   const m=mailings.find(function(x){return x.id===currentMailingId;});
   if(!m)return;
   m.contacts=m.contacts.concat(csvParsedData);
@@ -2505,7 +2505,7 @@ function mailingToPiste(mailingId,contactId){
       id:'l_'+uid(),
       nom:c.nom,societe:c.societe,poste:c.poste,
       email:c.email,tel:c.tel,
-      evtnom:'', source:'Mailing â€” '+m.nom,
+      evtnom:'', source:'Mailing — '+m.nom,
       solution:'',assigne:'',notes:'',
       created:new Date().toISOString()
     };
@@ -2530,7 +2530,7 @@ function openEditMailingContact(mailingId, contactId){
   document.getElementById('emc-secteur').value=c.secteur||'';
   document.getElementById('emc-email').value=c.email||'';
   document.getElementById('emc-tel').value=c.tel||'';
-  document.getElementById('emc-statut').value=c.statut||'Non envoyÃ©';
+  document.getElementById('emc-statut').value=c.statut||'Non envoyé';
   const modal=document.getElementById('edit-mailing-contact-modal');
   modal.setAttribute('data-mailing-id', mailingId);
   modal.setAttribute('data-contact-id', contactId);
@@ -2547,7 +2547,7 @@ function saveEditMailingContact(){
   if(!c)return;
   const nom=document.getElementById('emc-nom').value.trim();
   const societe=document.getElementById('emc-societe').value.trim();
-  if(!nom||!societe){alert('Nom et sociÃ©tÃ© requis.');return;}
+  if(!nom||!societe){alert('Nom et société requis.');return;}
   c.nom=nom;
   c.societe=societe.trim().toUpperCase();
   c.poste=document.getElementById('emc-poste').value.trim();
@@ -2566,7 +2566,7 @@ function initDragDrop(){
   var pipeEl=document.getElementById('dash-pipe');
   if(!pipeEl)return;
 
-  // Cards â€” dragstart
+  // Cards — dragstart
   pipeEl.querySelectorAll('.pccard').forEach(function(card){
     card.addEventListener('dragstart',function(e){
       dragOppId=card.getAttribute('data-opp-id');
@@ -2583,7 +2583,7 @@ function initDragDrop(){
     });
   });
 
-  // Columns â€” drop zone
+  // Columns — drop zone
   pipeEl.querySelectorAll('.pcol').forEach(function(col){
     col.addEventListener('dragover',function(e){
       e.preventDefault();
@@ -2598,13 +2598,13 @@ function initDragDrop(){
       col.classList.remove('dragover');
       var stage=col.getAttribute('data-stage');
       if(!dragOppId||!stage)return;
-      if(stage==='TerminÃ©'){
+      if(stage==='Terminé'){
         // Show status choice modal
         termineOppId=dragOppId;
         var o=opps.find(function(x){return x.id===termineOppId;});
         var p=o?getPiste(o.piste_id):{};
         var infoEl=document.getElementById('termine-piste-info');
-        if(infoEl)infoEl.innerHTML='<strong>'+(p.nom||'â€”')+'</strong> â€” '+(o?o.societe:'');
+        if(infoEl)infoEl.innerHTML='<strong>'+(p.nom||'—')+'</strong> — '+(o?o.societe:'');
         document.getElementById('termine-modal').style.display='flex';
       } else {
         var o=opps.find(function(x){return x.id===dragOppId;});
@@ -2615,7 +2615,7 @@ function initDragDrop(){
   });
 }
 
-// Handle TerminÃ© status button clicks
+// Handle Terminé status button clicks
 document.addEventListener('click',function(e){
   var btn=e.target.closest('.btn-terme');
   if(!btn)return;
