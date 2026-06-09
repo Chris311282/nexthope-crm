@@ -1544,12 +1544,13 @@ function updateEvt(evtName,field,val){
 
 const EVT_STATUT_BADGE={'Invité':'b-invite','Confirmé':'b-confirme','Présent':'b-present','Absent':'b-absent','Indisponible':'b-indisponible'};
 const EVT_STATUT_LIST=['Invité','Confirmé','Présent','Absent','Indisponible'];
-const EVT_STATUT_ROW_BG={
-  'Invité':       'rgba(201,122,16,.07)',
-  'Confirmé':     'rgba(26,122,234,.09)',
-  'Présent':      'rgba(26,174,106,.13)',
-  'Absent':       'rgba(220,38,38,.09)',
-  'Indisponible': 'rgba(220,80,38,.08)'
+// Couleurs cellule statut : fond dégradé + texte coloré (rgba → compatible light/dark)
+const EVT_STATUT_CELL={
+  'Invité':       {bg:'rgba(201,122,16,.14)', color:'#a05a00', border:'rgba(201,122,16,.45)'},
+  'Confirmé':     {bg:'rgba(26,122,234,.13)', color:'#0c5294', border:'rgba(26,122,234,.45)'},
+  'Présent':      {bg:'rgba(26,174,106,.16)', color:'#0f5c36', border:'rgba(26,174,106,.45)'},
+  'Absent':       {bg:'rgba(220,38,38,.13)',  color:'#a32d2d', border:'rgba(220,38,38,.45)'},
+  'Indisponible': {bg:'rgba(220,80,38,.13)',  color:'#7a2800', border:'rgba(220,80,38,.45)'}
 };
 
 let currentEventName=null;
@@ -1725,13 +1726,13 @@ function renderEvents(){
       const hasPiste=isPiste||inPipe;
       var pStatut=p.statut||'Présent';
       var evtAction=EVT_STATUT_ACTION[pStatut]||'—';
-      var rowBg=EVT_STATUT_ROW_BG[pStatut]||'transparent';
-      return '<tr style="cursor:pointer;background:'+rowBg+';transition:background .15s'+(p.converted?';opacity:0.75':'')+'" data-action="editParticipant" data-id="'+p.id+'" title="Cliquer pour modifier">'
+      var sc=EVT_STATUT_CELL[pStatut]||{bg:'var(--bg2)',color:'var(--tx)',border:'var(--bm)'};
+      return '<tr style="cursor:pointer'+(p.converted?';opacity:0.75':'')+'" data-action="editParticipant" data-id="'+p.id+'" title="Cliquer pour modifier">'
         +'<td style="padding:7px 8px;font-size:12px;font-weight:500">'+p.nom+'</td>'
         +'<td style="padding:7px 8px;font-size:12px;color:var(--tx2)">'+p.societe+'</td>'
         +'<td style="padding:7px 8px;font-size:11px;color:var(--txm)">'+(p.email||'—')+'</td>'
         +'<td style="padding:7px 8px" onclick="event.stopPropagation()">'
-          +'<select style="font-size:11px;padding:3px 6px;border-radius:4px;border:0.5px solid var(--bm);background:var(--bg2);color:var(--tx);cursor:pointer" '
+          +'<select style="font-size:11px;padding:3px 8px;border-radius:20px;border:0.5px solid '+sc.border+';background:'+sc.bg+';color:'+sc.color+';cursor:pointer;font-weight:600;appearance:none;-webkit-appearance:none" '
             +'data-action="updateParticipantStatut" data-pid="'+p.id+'">'
             +EVT_STATUT_LIST.map(function(s){return'<option value="'+s+'"'+(pStatut===s?' selected':'')+'>'+s+'</option>';}).join('')
           +'</select>'
