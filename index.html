@@ -713,6 +713,10 @@ function startRealtimeSync(){
   });
 }
 
+function getEvtNames(){
+  return [...new Set(participants.map(function(p){return p.evtnom;}).filter(function(n){return n&&!n.startsWith('Mailing');}))];
+}
+
 function applyNorm(){
   if(!participants.length)participants=JSON.parse(JSON.stringify(SEED_P));
   participants.forEach(function(p){if(!p.statut)p.statut='Présent';});
