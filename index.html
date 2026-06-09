@@ -2256,7 +2256,7 @@ document.addEventListener('keydown',function(e){
 // ── MAILING ────────────────────────────────────────────────────────────────
 const MAIL_STATUS=['Non envoyé','Envoyé','Ouvert','Répondu','Sans réponse'];
 const MAIL_STATUS_BADGE={'Non envoyé':'b-mailing','Envoyé':'b-envoye','Ouvert':'b-ouvert','Répondu':'b-repondu','Sans réponse':'b-sans-rep'};
-let currentMailingId=null, csvParsedData=[];
+let currentMailingId=null, csvParsedData=[], mlCsvParsedData=[];
 
 function renderMailing(){
   const el=document.getElementById('mailing-list');
@@ -2356,6 +2356,9 @@ function openAddMailingModal(){
   document.getElementById('ml-assigne').value='';
   document.getElementById('ml-objet').value='';
   document.getElementById('ml-notes').value='';
+  mlCsvParsedData=[];
+  var f=document.getElementById('ml-csv-file');if(f)f.value='';
+  var pr=document.getElementById('ml-csv-preview');if(pr)pr.style.display='none';
   document.getElementById('add-mailing-modal').style.display='flex';
 }
 
@@ -2369,9 +2372,10 @@ function saveAddMailing(){
     assigne:document.getElementById('ml-assigne').value,
     objet:document.getElementById('ml-objet').value.trim(),
     notes:document.getElementById('ml-notes').value.trim(),
-    contacts:[],
+    contacts:mlCsvParsedData.length ? mlCsvParsedData.slice() : [],
     created:new Date().toISOString()
   };
+  mlCsvParsedData=[];
   mailings.unshift(m);
   persist();closeModals();renderMailing();
 }
@@ -2419,7 +2423,55 @@ function openImportMailingCSV(mailingId){
 }
 
 document.addEventListener('change',function(e){
-  // CSV file input
+  // CSV import in "new campaign" modal
+  if(e.target.id==='ml-csv-file'){
+    const file=e.target.files[0];
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=function(ev){
+      const text=ev.target.result;
+      const lines=text.split(/\r?\n/).filter(function(l){return l.trim();});
+      if(lines.length<2){alert('Fichier vide ou invalide.');return;}
+      const headers=lines[0].split(',').map(function(h){return h.trim().toLowerCase().replace(/['"]/g,'');});
+      mlCsvParsedData=lines.slice(1).map(function(line,i){
+        const cols=line.split(',').map(function(c){return c.trim().replace(/^["']|["']$/g,'');});
+        const get=function(keys){
+          for(var k=0;k<keys.length;k++){
+            var idx=headers.findIndex(function(h){return h.includes(keys[k]);});
+            if(idx>=0&&cols[idx])return cols[idx];
+          }
+          return '';
+        };
+        return{
+          id:'mc_'+uid()+'_'+i,
+          nom:get(['nom','name','prenom','prénom'])||('Contact '+(i+1)),
+          societe:get(['soci','company','entreprise'])||'',
+          poste:get(['poste','titre','title','fonction'])||'',
+          secteur:get(['secteur','sector','industrie'])||'',
+          email:get(['email','mail','courriel'])||'',
+          tel:get(['tel','phone','portable','mobile'])||'',
+          statut:'Non envoyé',piste_id:null
+        };
+      }).filter(function(c){return c.nom;});
+      var countEl=document.getElementById('ml-csv-count-text');
+      if(countEl)countEl.textContent=mlCsvParsedData.length+' contact'+(mlCsvParsedData.length>1?'s':'')+ ' détecté'+(mlCsvParsedData.length>1?'s':'');
+      var preview=mlCsvParsedData.slice(0,5).map(function(c){
+        return'<tr><td style="padding:3px 6px;font-size:11px">'+c.nom+'</td>'
+          +'<td style="padding:3px 6px;font-size:11px;color:var(--tx2)">'+c.societe+'</td>'
+          +'<td style="padding:3px 6px;font-size:11px;color:var(--txm)">'+c.email+'</td></tr>';
+      }).join('');
+      var tableEl=document.getElementById('ml-csv-preview-table');
+      if(tableEl)tableEl.innerHTML='<table style="width:100%;border-collapse:collapse"><thead><tr>'
+        +'<th style="text-align:left;padding:3px 6px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Nom</th>'
+        +'<th style="text-align:left;padding:3px 6px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Société</th>'
+        +'<th style="text-align:left;padding:3px 6px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Email</th>'
+        +'</tr></thead><tbody>'+preview+'</tbody></table>'
+        +(mlCsvParsedData.length>5?'<div style="font-size:11px;color:var(--txm);padding:3px 6px">… et '+(mlCsvParsedData.length-5)+' autres</div>':'');
+      var pr=document.getElementById('ml-csv-preview');if(pr)pr.style.display='block';
+    };
+    reader.readAsText(file,'UTF-8');
+  }
+  // CSV file input (existing import modal)
   if(e.target.id==='csv-mailing-file'){
     const file=e.target.files[0];
     if(!file)return;
@@ -2642,8 +2694,17 @@ document.addEventListener('click',function(e){
       </div>
       <div class="fg full"><label class="flabel">Objet du mail</label><input id="ml-objet" placeholder="Ex: NextHope — Solutions Cybersécurité pour votre infrastructure"></div>
       <div class="fg full"><label class="flabel">Description / notes</label><textarea id="ml-notes" placeholder="Contexte, objectif de la campagne…"></textarea></div>
+      <div class="fg full">
+        <label class="flabel"><i class="ti ti-upload" style="margin-right:4px"></i>Importer une liste de contacts (CSV — optionnel)</label>
+        <input type="file" id="ml-csv-file" accept=".csv" style="margin-top:5px;font-size:12px;color:var(--tx2)">
+        <div style="font-size:11px;color:var(--txm);margin-top:3px">Colonnes reconnues : nom, société, poste, email, tél, secteur</div>
+        <div id="ml-csv-preview" style="display:none;margin-top:8px;background:var(--bg2);border-radius:6px;padding:8px;border:0.5px solid var(--bl)">
+          <div id="ml-csv-count-text" style="font-size:12px;font-weight:600;color:var(--acc);margin-bottom:6px"></div>
+          <div id="ml-csv-preview-table"></div>
+        </div>
+      </div>
     </div>
-    <div class="fact"><button class="bcancel" onclick="closeModals()">Annuler</button><button class="bsave" onclick="saveAddMailing()">Créer</button></div>
+    <div class="fact"><button class="bcancel" onclick="closeModals()">Annuler</button><button class="bsave" onclick="saveAddMailing()">Créer la campagne</button></div>
   </div>
 </div>
 
