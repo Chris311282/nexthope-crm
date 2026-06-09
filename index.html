@@ -674,9 +674,19 @@ function syncWithFirebase(){
     return fetch('https://nexthope-crm-default-rtdb.firebaseio.com/.json?auth='+token);
   }).then(function(resp){return resp.json();})
   .then(function(d){
-    if(!d){console.log('Firebase empty - persisting local data');persist();return;}
-    console.log('Firebase sync OK');
-    participants=toArr(d.participants);
+    var fbParticipants = d ? toArr(d.participants) : [];
+    if(!fbParticipants.length){
+      // Firebase vide ou sans participants : on seed et on persiste
+      if(!participants.length) participants=JSON.parse(JSON.stringify(SEED_P));
+      if(!Object.keys(evtData).length) evtData=JSON.parse(JSON.stringify(EVT_DEF));
+      persist();
+      applyNorm();
+      refreshTab();
+      startRealtimeSync();
+      return;
+    }
+    console.log('Firebase sync OK: '+fbParticipants.length+' participants');
+    participants=fbParticipants;
     pistes=toArr(d.pistes);
     opps=toArr(d.opps);
     mailings=toArr(d.mailings);
@@ -685,7 +695,7 @@ function syncWithFirebase(){
     refreshTab();
     startRealtimeSync();
   }).catch(function(e){
-    console.warn('Firebase sync failed (slow network?):', e.message);
+    console.warn('Firebase sync failed:', e.message);
   });
 }
 
