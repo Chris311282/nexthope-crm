@@ -976,5 +976,48 @@ function persist(){
 </div>
 
 </div>
+
+<script>
+firebase.initializeApp(firebaseConfig);
+auth = firebase.auth();
+db = firebase.database();
+
+auth.onAuthStateChanged(function(user) {
+  if (user) {
+    currentUser = user;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-wrap').style.display = 'block';
+    load();
+  } else {
+    currentUser = null;
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app-wrap').style.display = 'none';
+  }
+});
+
+function doLogin() {
+  var email = document.getElementById('login-email').value.trim();
+  var password = document.getElementById('login-password').value;
+  var errDiv = document.getElementById('login-error');
+  var btn = document.getElementById('login-btn');
+  errDiv.style.display = 'none';
+  btn.disabled = true;
+  btn.innerHTML = 'Connexion…';
+  auth.signInWithEmailAndPassword(email, password)
+    .catch(function(e) {
+      var msg = (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found')
+        ? 'Email ou mot de passe incorrect.'
+        : e.message;
+      errDiv.textContent = msg;
+      errDiv.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-login"></i> Se connecter';
+    });
+}
+
+function doLogout() {
+  auth.signOut();
+}
+</script>
 </body>
 </html>
