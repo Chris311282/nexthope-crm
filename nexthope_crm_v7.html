@@ -1732,7 +1732,7 @@ function renderEvents(){
         +'<td style="padding:7px 8px;font-size:12px;color:var(--tx2)">'+p.societe+'</td>'
         +'<td style="padding:7px 8px;font-size:11px;color:var(--txm)">'+(p.email||'—')+'</td>'
         +'<td style="padding:7px 8px" onclick="event.stopPropagation()">'
-          +'<select style="font-size:11px;padding:3px 8px;border-radius:20px;border:0.5px solid '+sc.border+';background:'+sc.bg+';color:'+sc.color+';cursor:pointer;font-weight:600;appearance:none;-webkit-appearance:none" '
+          +'<select style="font-size:11px;padding:3px 8px;border-radius:20px;border:none;background:'+sc.bg+';color:'+sc.color+';cursor:pointer;font-weight:600;appearance:none;-webkit-appearance:none" '
             +'data-action="updateParticipantStatut" data-pid="'+p.id+'">'
             +EVT_STATUT_LIST.map(function(s){return'<option value="'+s+'"'+(pStatut===s?' selected':'')+'>'+s+'</option>';}).join('')
           +'</select>'
