@@ -732,12 +732,8 @@ function applyNorm(){
     if(!evtData[k])evtData[k]={invites:0,presents:0,cout:0,date:'',lieu:'',goodies:''};
     ['date','lieu','goodies'].forEach(function(f){if(evtData[k][f]===undefined)evtData[k][f]='';});
     if(!evtData[k].statut)evtData[k].statut='ouverte';
-    if(!evtData[k].actions)evtData[k].actions=EVT_ACTIONS_DEF.map(function(l){return{id:uid(),label:l,done:false};});
   });
-  mailings.forEach(function(m){
-    if(!m.statut)m.statut='ouverte';
-    if(!m.actions)m.actions=MAILING_ACTIONS_DEF.map(function(l){return{id:uid(),label:l,done:false};});
-  });
+  mailings.forEach(function(m){if(!m.statut)m.statut='ouverte';});
 }
 
 function refreshTab(){
@@ -776,8 +772,6 @@ const TERM_COLORS={'Concluant':'#1AAE6A','À creuser':'#c97a10','En veille':'#88
 const COMMS=['Nickie','Tsilavo','Fabio'];
 const CCOLORS=['#A01864','#1A7AEA','#1AAE6A'];
 const EVT_PAL=['#A01864','#1A7AEA','#1AAE6A','#c97a10','#7A1AEA','#5b21b6'];
-const EVT_ACTIONS_DEF=["Confirmer le lieu / la salle","Envoyer les invitations","Rappel J-14","Rappel J-7","Confirmation des participants (J-2)","Rappel J-1","Préparer l'accueil & badges","Compte-rendu post-événement","Suivi des leads post-événement"];
-const MAILING_ACTIONS_DEF=["Préparer la liste de destinataires","Rédiger le contenu du mail","Validation interne","Test d'envoi","Envoi de la campagne","Relance non-ouvertures","Bilan de la campagne"];
 
 const EVT_DEF={
   'Forti x NextHope':{invites:0,presents:34,cout:0,date:'2026-05-28',lieu:'',goodies:''},
@@ -1638,70 +1632,72 @@ function updateEvtPresents(evtName){
 }
 
 // ── CAMPAIGN ACTION TRACKING ───────────────────────────────────────────────
-function _campObj(type,id){return type==='evt'?evtData[id]:mailings.find(function(m){return m.id===id;});}
 function toggleCampagneStatut(type,id){
-  var obj=_campObj(type,id);if(!obj)return;
+  var obj=type==='evt'?evtData[id]:mailings.find(function(m){return m.id===id;});
+  if(!obj)return;
   obj.statut=obj.statut==='ouverte'?'fermée':'ouverte';
   persist();if(type==='evt')renderEvents();else renderMailing();
 }
-function toggleCampagneAction(type,id,actionId){
-  var obj=_campObj(type,id);if(!obj||!obj.actions)return;
-  var a=obj.actions.find(function(x){return x.id===actionId;});
-  if(a)a.done=!a.done;
-  persist();if(type==='evt')renderEvents();else renderMailing();
+function _campActionRow(p,o){
+  var stageColor=PIPE_COLORS[o.stage]||'#888';
+  var today=new Date();today.setHours(0,0,0,0);
+  var urgColor='#888780',urgLabel='—';
+  if(o.reldate){
+    var rel=new Date(o.reldate+'T00:00:00');
+    var diff=Math.round((rel-today)/(1000*60*60*24));
+    if(diff<0){urgColor='#E24B4A';urgLabel='Retard '+Math.abs(diff)+'j';}
+    else if(diff===0){urgColor='#E24B4A';urgLabel="Aujourd'hui";}
+    else if(diff<=7){urgColor='#c97a10';urgLabel='J+'+diff;}
+    else{urgLabel='J+'+diff;}
+  }
+  return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg);border-radius:6px;margin-bottom:5px;flex-wrap:wrap">'
+    +'<div style="width:8px;height:8px;border-radius:50%;background:'+urgColor+';flex-shrink:0"></div>'
+    +'<div style="flex:1;min-width:100px">'
+      +'<strong style="font-size:13px;font-weight:500">'+p.nom+'</strong>'
+      +'<span style="font-size:11px;color:var(--tx2);margin-left:6px">'+o.societe+'</span>'
+    +'</div>'
+    +'<div>'+badge(o.stage)+'</div>'
+    +(o.next_action
+      ?'<div style="font-size:12px;color:'+stageColor+';font-weight:500">→ '+o.next_action+'</div>'
+      :'<div style="font-size:12px;color:var(--txm)">Aucune action définie</div>')
+    +'<div style="font-size:11px;font-weight:600;color:'+urgColor+';white-space:nowrap;min-width:60px;text-align:right">'+urgLabel+'</div>'
+    +(o.assigne?'<div style="font-size:11px;color:var(--txm)">'+o.assigne+'</div>':'')
+    +'<button class="abtn" data-action="editOpp" data-id="'+o.id+'" style="padding:3px 5px;flex-shrink:0"><i class="ti ti-edit" style="font-size:13px"></i></button>'
+  +'</div>';
 }
-function addCampagneAction(type,id,inputId){
-  var inp=document.getElementById(inputId);
-  var label=inp?(inp.value||'').trim():'';
-  if(!label)return;
-  var obj=_campObj(type,id);if(!obj)return;
-  if(!obj.actions)obj.actions=[];
-  obj.actions.push({id:uid(),label:label,done:false});
-  if(inp)inp.value='';
-  persist();if(type==='evt')renderEvents();else renderMailing();
-}
-function deleteCampagneAction(type,id,actionId){
-  var obj=_campObj(type,id);if(!obj||!obj.actions)return;
-  obj.actions=obj.actions.filter(function(a){return a.id!==actionId;});
-  persist();if(type==='evt')renderEvents();else renderMailing();
-}
-function buildActionPanel(type,id,obj){
-  var safeId=id.replace(/[^a-z0-9]/gi,'_');
-  var inputId='ainp_'+safeId;
-  var actions=obj.actions||[];
+function buildCampActionPanel(type,id,obj){
   var statut=obj.statut||'ouverte';
   var isOpen=statut==='ouverte';
-  var done=actions.filter(function(a){return a.done;}).length;
-  var total=actions.length;
-  var pct=total>0?Math.round(done/total*100):0;
-  return '<div style="margin-bottom:14px;padding:12px 14px;background:var(--bg2);border-radius:8px;border:0.5px solid var(--bl)">'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">'
+  // Find pistes for this campaign
+  var campPistes=[];
+  if(type==='evt'){
+    campPistes=pistes.filter(function(p){return p.evtnom===id;});
+  } else {
+    var ml=mailings.find(function(m){return m.id===id;});
+    var pids=(ml?ml.contacts:[]).filter(function(c){return c.piste_id;}).map(function(c){return c.piste_id;});
+    campPistes=pistes.filter(function(p){return pids.indexOf(p.id)>=0;});
+  }
+  // Match each piste to its active pipeline opp
+  var rows=campPistes.map(function(p){
+    var o=opps.find(function(x){return x.piste_id===p.id&&PIPE_STAGES.indexOf(x.stage)>=0;});
+    return o?{p:p,o:o}:null;
+  }).filter(Boolean);
+  var html='<div style="margin-bottom:14px;padding:10px 14px;background:var(--bg2);border-radius:8px;border:0.5px solid var(--bl)">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">'
       +'<div style="display:flex;align-items:center;gap:8px">'
-        +'<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;letter-spacing:.04em;background:'+(isOpen?'rgba(26,174,106,.13)':'rgba(128,128,128,.1)')+';color:'+(isOpen?'#1AAE6A':'var(--txm)')+'">● '+(isOpen?'OUVERTE':'FERMÉE')+'</span>'
-        +'<span style="font-size:11px;color:var(--txm)">Suivi actions : <strong style="color:var(--tx)">'+done+'/'+total+'</strong> réalisée'+(done>1?'s':'')+'</span>'
+        +'<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:'+(isOpen?'rgba(26,174,106,.13)':'rgba(128,128,128,.1)')+';color:'+(isOpen?'#1AAE6A':'var(--txm)')+'">● '+(isOpen?'OUVERTE':'FERMÉE')+'</span>'
+        +'<span style="font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.05em">Actions à faire</span>'
+        +(rows.length?'<span style="font-size:11px;color:var(--txm)">('+rows.length+' piste'+(rows.length>1?'s':'')+' en pipeline)</span>':'')
       +'</div>'
       +'<button class="abtn" data-action="toggleCampStatut" data-camp-type="'+type+'" data-camp-id="'+id+'" style="font-size:11px;padding:3px 9px">'
         +(isOpen?'<i class="ti ti-lock" style="font-size:11px;margin-right:4px"></i>Fermer':'<i class="ti ti-lock-open" style="font-size:11px;margin-right:4px"></i>Rouvrir')
       +'</button>'
     +'</div>'
-    +(total>0?'<div style="height:3px;border-radius:2px;background:var(--bl);margin-bottom:10px;overflow:hidden">'
-      +'<div style="height:100%;width:'+pct+'%;background:'+(isOpen?'#1AAE6A':'var(--txm)')+';border-radius:2px;transition:width .3s"></div></div>':'')
-    +'<div>'
-    +actions.map(function(a){
-      return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--bl)">'
-        +'<input type="checkbox"'+(a.done?' checked':'')+' style="cursor:pointer;accent-color:#1AAE6A;width:14px;height:14px;flex-shrink:0"'
-          +' data-action="toggleCampAction" data-camp-type="'+type+'" data-camp-id="'+id+'" data-action-id="'+a.id+'">'
-        +'<span style="flex:1;font-size:12px;'+(a.done?'text-decoration:line-through;color:var(--txm)':'color:var(--tx)')+'">'+a.label+'</span>'
-        +(isOpen?'<button class="abtn" style="padding:2px 4px;flex-shrink:0;opacity:.5" data-action="deleteCampAction"'
-          +' data-camp-type="'+type+'" data-camp-id="'+id+'" data-action-id="'+a.id+'" title="Supprimer"><i class="ti ti-x" style="font-size:10px"></i></button>':'')
-      +'</div>';
-    }).join('')
-    +'</div>'
-    +(isOpen?'<div style="display:flex;gap:6px;margin-top:8px">'
-      +'<input id="'+inputId+'" placeholder="Nouvelle action…" style="flex:1;font-size:12px;padding:5px 8px;border:0.5px solid var(--bm);border-radius:4px;background:var(--bg);color:var(--tx);outline:none" data-camp-type="'+type+'" data-camp-id="'+id+'" data-action="campActionInput">'
-      +'<button class="abtn" style="font-size:11px;padding:5px 10px;flex-shrink:0" data-action="addCampAction" data-camp-type="'+type+'" data-camp-id="'+id+'" data-input-id="'+inputId+'"><i class="ti ti-plus" style="font-size:11px;margin-right:3px"></i>Ajouter</button>'
-    +'</div>':'')
+    +(rows.length
+      ?rows.map(function(r){return _campActionRow(r.p,r.o);}).join('')
+      :'<div style="text-align:center;padding:10px;color:var(--txm);font-size:12px"><i class="ti ti-check" style="display:block;font-size:18px;margin-bottom:4px;color:#1AAE6A"></i>Aucune piste en pipeline pour cette campagne</div>')
   +'</div>';
+  return html;
 }
 // ── SAVE/RESTORE open cards (used by renderEvents & renderMailing) ─────────
 function _saveOpen(prefix){
@@ -1834,7 +1830,7 @@ function renderEvents(){
           +'<div class="efield"><label>Coût (Ar)</label><input type="number" min="0" value="'+(ed.cout||'')+'" placeholder="0" data-evt="'+e+'" data-field="cout" class="evt-input"></div>'
         +'</div>'
         // Action tracking panel
-        +buildActionPanel('evt',e,ed)
+        +buildCampActionPanel('evt',e,ed)
         // Participants table
         +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">'
           +'<div style="font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.05em">'
@@ -2278,10 +2274,6 @@ document.addEventListener('click',function(e){
   else if(act==='delMailing'){e.stopPropagation();delMailing(id);}
   else if(act==='toggleCampStatut'){e.stopPropagation();
     toggleCampagneStatut(btn.getAttribute('data-camp-type'),btn.getAttribute('data-camp-id'));}
-  else if(act==='deleteCampAction'){e.stopPropagation();
-    deleteCampagneAction(btn.getAttribute('data-camp-type'),btn.getAttribute('data-camp-id'),btn.getAttribute('data-action-id'));}
-  else if(act==='addCampAction'){e.stopPropagation();
-    addCampagneAction(btn.getAttribute('data-camp-type'),btn.getAttribute('data-camp-id'),btn.getAttribute('data-input-id'));}
   else if(act==='editMailingContact'){
     e.stopPropagation();
     const mid=btn.getAttribute('data-mailing-id');
@@ -2310,14 +2302,6 @@ document.addEventListener('change',function(e){
     const p=participants.find(function(x){return x.id===pid;});
     if(p){p.statut=e.target.value;updateEvtPresents(p.evtnom);persist();renderEvents();}
   }
-  // Campaign action checkbox toggle
-  if(e.target.getAttribute('data-action')==='toggleCampAction'){
-    e.stopPropagation();
-    var type=e.target.getAttribute('data-camp-type');
-    var cid=e.target.getAttribute('data-camp-id');
-    var aid=e.target.getAttribute('data-action-id');
-    toggleCampagneAction(type,cid,aid);
-  }
 });
 document.addEventListener('focusin',function(e){
   const inp=e.target.closest('.evt-rename-input');
@@ -2335,13 +2319,6 @@ document.addEventListener('focusout',function(e){
 });
 document.addEventListener('keydown',function(e){
   if(e.key==='Enter'&&e.target.closest('.evt-rename-input'))e.target.blur();
-  // Enter on camp action input → add action
-  if(e.key==='Enter'&&e.target.getAttribute('data-action')==='campActionInput'){
-    e.preventDefault();
-    var type=e.target.getAttribute('data-camp-type');
-    var cid=e.target.getAttribute('data-camp-id');
-    addCampagneAction(type,cid,e.target.id);
-  }
 });
 
 document.addEventListener('focusin',function(e){
@@ -2426,7 +2403,7 @@ function renderMailing(){
       // Detail panel
       +'<div id="'+sid+'" style="display:none;margin-top:14px;padding-top:14px;border-top:0.5px solid var(--bl)">'
         +(m.objet?'<div style="font-size:12px;color:var(--tx2);margin-bottom:10px"><i class="ti ti-mail-opened" style="margin-right:5px"></i>'+m.objet+'</div>':'')
-        +buildActionPanel('mailing',m.id,m)
+        +buildCampActionPanel('mailing',m.id,m)
         +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
           +'<thead><tr>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:18%">Nom</th>'
