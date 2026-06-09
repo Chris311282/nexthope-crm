@@ -1614,6 +1614,7 @@ function openEditParticipantModal(pid){
   document.getElementById('ep2-email').value=p.email||'';
   document.getElementById('ep2-tel').value=p.tel||'';
   document.getElementById('ep2-statut').value=p.statut||'Présent';
+  document.getElementById('ep2-remarques').value=p.remarques||'';
   document.getElementById('edit-participant-modal').setAttribute('data-pid',pid);
   document.getElementById('edit-participant-modal').style.display='flex';
 }
@@ -1632,6 +1633,7 @@ function saveEditParticipant(){
   p.email=document.getElementById('ep2-email').value.trim();
   p.tel=document.getElementById('ep2-tel').value.trim();
   p.statut=document.getElementById('ep2-statut').value;
+  p.remarques=document.getElementById('ep2-remarques').value.trim();
   updateEvtPresents(p.evtnom);
   persist();closeModals();renderEvents();
 }
@@ -1644,7 +1646,7 @@ function updateEvtPresents(evtName){
 }
 
 // ── CAMPAIGN ACTION HELPERS ────────────────────────────────────────────────
-const EVT_STATUT_ACTION={'Invité':'À relancer','Confirmé':'Rappel J-1','Présent':'Suivi commercial','Absent':'—','Indisponible':'Prochain évènement'};
+const EVT_STATUT_ACTION={'Invité':'À relancer','Confirmé':'Rappel J-1','Présent':'—','Absent':'—','Indisponible':'—'};
 const MAIL_STATUS_ACTION={'Non envoyé':'À envoyer','Envoyé':'À relancer','Ouvert':'À appeler','Répondu':'Suivi commercial','Sans suite':'—'};
 const CAMP_ACTION_COLOR={'À relancer':'#c97a10','Rappel J-1':'#1A7AEA','Suivi commercial':'#1AAE6A','À envoyer':'#c97a10','À appeler':'#7A1AEA','Prochain évènement':'#8A5AEA','—':'var(--txm)'};
 function campActionTag(action){
@@ -2909,8 +2911,11 @@ document.addEventListener('click',function(e){
           <option value="Confirmé">Confirmé</option>
           <option value="Présent">Présent</option>
           <option value="Absent">Absent</option>
-          <option value="Excusé">Excusé</option>
+          <option value="Indisponible">Indisponible</option>
         </select>
+      </div>
+      <div class="fg full"><label class="flabel">Remarques</label>
+        <textarea id="ep2-remarques" rows="2" placeholder="Notes libres sur ce participant..."></textarea>
       </div>
     </div>
     <div class="fact"><button class="bcancel" onclick="closeModals()">Annuler</button><button class="bsave" onclick="saveEditParticipant()">Enregistrer</button></div>
