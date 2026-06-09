@@ -165,12 +165,14 @@ tr:hover td{background:var(--bg2)}
 .b-confirme{background:#e6f1fb;color:#0c447c}
 .b-present{background:#e6f6ed;color:#145c38}
 .b-absent{background:#fcebeb;color:#a32d2d}
+.b-indisponible{background:#fdeee6;color:#8a3200}
 .b-excuse{background:#f1efe8;color:#5f5e5a}
 @media(prefers-color-scheme:dark){
   .b-invite{background:#3d2e10;color:#f5c97a}
   .b-confirme{background:#0c2540;color:#85b7eb}
   .b-present{background:#0f2e1e;color:#5dcaa5}
   .b-absent{background:#2d0a0a;color:#f09595}
+  .b-indisponible{background:#3d1500;color:#f5a07a}
   .b-excuse{background:#3a3835;color:#b4b2a9}
 }
 
@@ -1540,8 +1542,15 @@ function updateEvt(evtName,field,val){
 
 
 
-const EVT_STATUT_BADGE={'Invité':'b-invite','Confirmé':'b-confirme','Présent':'b-present','Absent':'b-absent'};
-const EVT_STATUT_LIST=['Invité','Confirmé','Présent','Absent'];
+const EVT_STATUT_BADGE={'Invité':'b-invite','Confirmé':'b-confirme','Présent':'b-present','Absent':'b-absent','Indisponible':'b-indisponible'};
+const EVT_STATUT_LIST=['Invité','Confirmé','Présent','Absent','Indisponible'];
+const EVT_STATUT_ROW_BG={
+  'Invité':       'rgba(201,122,16,.07)',
+  'Confirmé':     'rgba(26,122,234,.09)',
+  'Présent':      'rgba(26,174,106,.13)',
+  'Absent':       'rgba(220,38,38,.09)',
+  'Indisponible': 'rgba(220,80,38,.08)'
+};
 
 let currentEventName=null;
 
@@ -1634,9 +1643,9 @@ function updateEvtPresents(evtName){
 }
 
 // ── CAMPAIGN ACTION HELPERS ────────────────────────────────────────────────
-const EVT_STATUT_ACTION={'Invité':'À relancer','Confirmé':'Rappel J-1','Présent':'Suivi commercial','Absent':'—'};
+const EVT_STATUT_ACTION={'Invité':'À relancer','Confirmé':'Rappel J-1','Présent':'Suivi commercial','Absent':'—','Indisponible':'Prochain évènement'};
 const MAIL_STATUS_ACTION={'Non envoyé':'À envoyer','Envoyé':'À relancer','Ouvert':'À appeler','Répondu':'Suivi commercial','Sans suite':'—'};
-const CAMP_ACTION_COLOR={'À relancer':'#c97a10','Rappel J-1':'#1A7AEA','Suivi commercial':'#1AAE6A','À envoyer':'#c97a10','À appeler':'#7A1AEA','—':'var(--txm)'};
+const CAMP_ACTION_COLOR={'À relancer':'#c97a10','Rappel J-1':'#1A7AEA','Suivi commercial':'#1AAE6A','À envoyer':'#c97a10','À appeler':'#7A1AEA','Prochain évènement':'#8A5AEA','—':'var(--txm)'};
 function campActionTag(action){
   var c=CAMP_ACTION_COLOR[action]||'var(--txm)';
   return action==='—'
@@ -1699,6 +1708,7 @@ function renderEvents(){
     const nbPresents=evtParticipants.filter(function(p){return p.statut==='Présent';}).length;
     const nbConfirmes=evtParticipants.filter(function(p){return p.statut==='Confirmé';}).length;
     const nbAbsents=evtParticipants.filter(function(p){return p.statut==='Absent';}).length;
+    const nbIndispo=evtParticipants.filter(function(p){return p.statut==='Indisponible';}).length;
     const partRows=evtParticipants.map(function(p){
       const isPiste=p.converted&&p.piste_id;
       const pisteObj=isPiste?getPiste(p.piste_id):null;
@@ -1713,15 +1723,17 @@ function renderEvents(){
         pipeCell='<button class="btn-piste" data-action="convertEnPisteEvent" data-id="'+p.id+'" style="font-size:11px;padding:4px 8px;white-space:nowrap">Convertir en piste</button>';
       }
       const hasPiste=isPiste||inPipe;
-      var evtAction=EVT_STATUT_ACTION[p.statut||'Présent']||'—';
-      return '<tr style="cursor:pointer'+(p.converted?';opacity:0.7':'')+'" data-action="editParticipant" data-id="'+p.id+'" title="Cliquer pour modifier">'
+      var pStatut=p.statut||'Présent';
+      var evtAction=EVT_STATUT_ACTION[pStatut]||'—';
+      var rowBg=EVT_STATUT_ROW_BG[pStatut]||'transparent';
+      return '<tr style="cursor:pointer;background:'+rowBg+';transition:background .15s'+(p.converted?';opacity:0.75':'')+'" data-action="editParticipant" data-id="'+p.id+'" title="Cliquer pour modifier">'
         +'<td style="padding:7px 8px;font-size:12px;font-weight:500">'+p.nom+'</td>'
         +'<td style="padding:7px 8px;font-size:12px;color:var(--tx2)">'+p.societe+'</td>'
         +'<td style="padding:7px 8px;font-size:11px;color:var(--txm)">'+(p.email||'—')+'</td>'
         +'<td style="padding:7px 8px" onclick="event.stopPropagation()">'
           +'<select style="font-size:11px;padding:3px 6px;border-radius:4px;border:0.5px solid var(--bm);background:var(--bg2);color:var(--tx);cursor:pointer" '
             +'data-action="updateParticipantStatut" data-pid="'+p.id+'">'
-            +EVT_STATUT_LIST.map(function(s){return'<option value="'+s+'"'+(p.statut===s?' selected':'')+'>'+s+'</option>';}).join('')
+            +EVT_STATUT_LIST.map(function(s){return'<option value="'+s+'"'+(pStatut===s?' selected':'')+'>'+s+'</option>';}).join('')
           +'</select>'
         +'</td>'
         +'<td style="padding:7px 8px;white-space:nowrap">'+campActionTag(evtAction)+'</td>'
@@ -1790,7 +1802,7 @@ function renderEvents(){
         // Participants table
         +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">'
           +'<div style="font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.05em">'
-            +nbInvites+' participants · '+nbPresents+' présents · '+nbConfirmes+' confirmés · '+nbAbsents+' absents'
+            +nbInvites+' participants · '+nbPresents+' présents · '+nbConfirmes+' confirmés · '+nbAbsents+' absents'+(nbIndispo?' · '+nbIndispo+' indisponibles':'')
           +'</div>'
           +'<button class="btn-piste" style="font-size:11px;padding:4px 10px" data-action="addParticipant" data-id="'+e+'"><i class="ti ti-user-plus" style="font-size:11px;margin-right:4px"></i>Ajouter</button>'
         +'</div>'
