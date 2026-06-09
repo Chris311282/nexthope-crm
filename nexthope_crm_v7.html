@@ -719,7 +719,11 @@ function getEvtNames(){
 
 function applyNorm(){
   if(!participants.length)participants=JSON.parse(JSON.stringify(SEED_P));
-  participants.forEach(function(p){if(!p.statut)p.statut='Présent';});
+  participants.forEach(function(p){
+    if(!p.statut)p.statut='Présent';
+    if(p.statut==='Excusé')p.statut='Absent';
+  });
+  mailings.forEach(function(m){m.contacts.forEach(function(c){if(c.statut==='Sans réponse')c.statut='Sans suite';});});
   var AL={'ACCESBANQUE MADAGASACAR':'ACCÈS BANQUE MADAGASCAR','ACCESBANQUE MADAGASCAR':'ACCÈS BANQUE MADAGASCAR','ACCES BANQUE MADAGASCAR':'ACCÈS BANQUE MADAGASCAR','ACCESSBANQUE MADAGASCAR':'ACCÈS BANQUE MADAGASCAR','ACCESBANQUE':'ACCÈS BANQUE MADAGASCAR','TALYS GROUP':'GROUPE TALYS','GROUP TALYS':'GROUPE TALYS','TALYS GROUPE':'GROUPE TALYS'};
   function ns(s){if(!s)return s;var u=s.trim().toUpperCase();return AL[u]||u;}
   participants.forEach(function(p){p.societe=ns(p.societe);});
@@ -731,9 +735,7 @@ function applyNorm(){
   getEvtNames().forEach(function(k){
     if(!evtData[k])evtData[k]={invites:0,presents:0,cout:0,date:'',lieu:'',goodies:''};
     ['date','lieu','goodies'].forEach(function(f){if(evtData[k][f]===undefined)evtData[k][f]='';});
-    if(!evtData[k].statut)evtData[k].statut='ouverte';
   });
-  mailings.forEach(function(m){if(!m.statut)m.statut='ouverte';});
 }
 
 function refreshTab(){
@@ -1538,8 +1540,8 @@ function updateEvt(evtName,field,val){
 
 
 
-const EVT_STATUT_BADGE={'Invité':'b-invite','Confirmé':'b-confirme','Présent':'b-present','Absent':'b-absent','Excusé':'b-excuse'};
-const EVT_STATUT_LIST=['Invité','Confirmé','Présent','Absent','Excusé'];
+const EVT_STATUT_BADGE={'Invité':'b-invite','Confirmé':'b-confirme','Présent':'b-present','Absent':'b-absent'};
+const EVT_STATUT_LIST=['Invité','Confirmé','Présent','Absent'];
 
 let currentEventName=null;
 
@@ -1631,73 +1633,29 @@ function updateEvtPresents(evtName){
   }).length;
 }
 
-// ── CAMPAIGN ACTION TRACKING ───────────────────────────────────────────────
-function toggleCampagneStatut(type,id){
-  var obj=type==='evt'?evtData[id]:mailings.find(function(m){return m.id===id;});
-  if(!obj)return;
-  obj.statut=obj.statut==='ouverte'?'fermée':'ouverte';
-  persist();if(type==='evt')renderEvents();else renderMailing();
+// ── CAMPAIGN ACTION HELPERS ────────────────────────────────────────────────
+const EVT_STATUT_ACTION={'Invité':'À relancer','Confirmé':'Rappel J-1','Présent':'Suivi commercial','Absent':'—'};
+const MAIL_STATUS_ACTION={'Non envoyé':'À envoyer','Envoyé':'À relancer','Ouvert':'À appeler','Répondu':'Suivi commercial','Sans suite':'—'};
+const CAMP_ACTION_COLOR={'À relancer':'#c97a10','Rappel J-1':'#1A7AEA','Suivi commercial':'#1AAE6A','À envoyer':'#c97a10','À appeler':'#7A1AEA','—':'var(--txm)'};
+function campActionTag(action){
+  var c=CAMP_ACTION_COLOR[action]||'var(--txm)';
+  return action==='—'
+    ?'<span style="font-size:11px;color:var(--txm)">—</span>'
+    :'<span style="font-size:11px;font-weight:600;color:'+c+'">→ '+action+'</span>';
 }
-function _campActionRow(p,o){
-  var stageColor=PIPE_COLORS[o.stage]||'#888';
-  var today=new Date();today.setHours(0,0,0,0);
-  var urgColor='#888780',urgLabel='—';
-  if(o.reldate){
-    var rel=new Date(o.reldate+'T00:00:00');
-    var diff=Math.round((rel-today)/(1000*60*60*24));
-    if(diff<0){urgColor='#E24B4A';urgLabel='Retard '+Math.abs(diff)+'j';}
-    else if(diff===0){urgColor='#E24B4A';urgLabel="Aujourd'hui";}
-    else if(diff<=7){urgColor='#c97a10';urgLabel='J+'+diff;}
-    else{urgLabel='J+'+diff;}
-  }
-  return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg);border-radius:6px;margin-bottom:5px;flex-wrap:wrap">'
-    +'<div style="width:8px;height:8px;border-radius:50%;background:'+urgColor+';flex-shrink:0"></div>'
-    +'<div style="flex:1;min-width:100px">'
-      +'<strong style="font-size:13px;font-weight:500">'+p.nom+'</strong>'
-      +'<span style="font-size:11px;color:var(--tx2);margin-left:6px">'+o.societe+'</span>'
-    +'</div>'
-    +'<div>'+badge(o.stage)+'</div>'
-    +(o.next_action
-      ?'<div style="font-size:12px;color:'+stageColor+';font-weight:500">→ '+o.next_action+'</div>'
-      :'<div style="font-size:12px;color:var(--txm)">Aucune action définie</div>')
-    +'<div style="font-size:11px;font-weight:600;color:'+urgColor+';white-space:nowrap;min-width:60px;text-align:right">'+urgLabel+'</div>'
-    +(o.assigne?'<div style="font-size:11px;color:var(--txm)">'+o.assigne+'</div>':'')
-    +'<button class="abtn" data-action="editOpp" data-id="'+o.id+'" style="padding:3px 5px;flex-shrink:0"><i class="ti ti-edit" style="font-size:13px"></i></button>'
-  +'</div>';
-}
-function buildCampActionPanel(type,id,obj){
-  var statut=obj.statut||'ouverte';
-  var isOpen=statut==='ouverte';
-  // Find pistes for this campaign
-  var campPistes=[];
-  if(type==='evt'){
-    campPistes=pistes.filter(function(p){return p.evtnom===id;});
-  } else {
-    var ml=mailings.find(function(m){return m.id===id;});
-    var pids=(ml?ml.contacts:[]).filter(function(c){return c.piste_id;}).map(function(c){return c.piste_id;});
-    campPistes=pistes.filter(function(p){return pids.indexOf(p.id)>=0;});
-  }
-  // Match each piste to its active pipeline opp
-  var rows=campPistes.map(function(p){
-    var o=opps.find(function(x){return x.piste_id===p.id&&PIPE_STAGES.indexOf(x.stage)>=0;});
-    return o?{p:p,o:o}:null;
-  }).filter(Boolean);
-  var html='<div style="margin-bottom:14px;padding:10px 14px;background:var(--bg2);border-radius:8px;border:0.5px solid var(--bl)">'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">'
-      +'<div style="display:flex;align-items:center;gap:8px">'
-        +'<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:'+(isOpen?'rgba(26,174,106,.13)':'rgba(128,128,128,.1)')+';color:'+(isOpen?'#1AAE6A':'var(--txm)')+'">● '+(isOpen?'OUVERTE':'FERMÉE')+'</span>'
-        +'<span style="font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.05em">Actions à faire</span>'
-        +(rows.length?'<span style="font-size:11px;color:var(--txm)">('+rows.length+' piste'+(rows.length>1?'s':'')+' en pipeline)</span>':'')
-      +'</div>'
-      +'<button class="abtn" data-action="toggleCampStatut" data-camp-type="'+type+'" data-camp-id="'+id+'" style="font-size:11px;padding:3px 9px">'
-        +(isOpen?'<i class="ti ti-lock" style="font-size:11px;margin-right:4px"></i>Fermer':'<i class="ti ti-lock-open" style="font-size:11px;margin-right:4px"></i>Rouvrir')
-      +'</button>'
-    +'</div>'
-    +(rows.length
-      ?rows.map(function(r){return _campActionRow(r.p,r.o);}).join('')
-      :'<div style="text-align:center;padding:10px;color:var(--txm);font-size:12px"><i class="ti ti-check" style="display:block;font-size:18px;margin-bottom:4px;color:#1AAE6A"></i>Aucune piste en pipeline pour cette campagne</div>')
-  +'</div>';
-  return html;
+function campActionRecap(items,actionMap){
+  var counts={};
+  items.forEach(function(it){
+    var a=actionMap[it.statut]||'—';
+    counts[a]=(counts[a]||0)+1;
+  });
+  return Object.keys(counts).filter(function(a){return a!=='—';}).map(function(a){
+    var c=CAMP_ACTION_COLOR[a]||'var(--txm)';
+    return '<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:var(--bg);border:0.5px solid var(--bl)">'
+      +'<span style="color:'+c+'">'+counts[a]+'</span>'
+      +'<span style="color:var(--tx2)">'+a+'</span>'
+    +'</span>';
+  }).join('')||(counts['—']?'<span style="font-size:11px;color:var(--txm)">Aucune action en attente</span>':'');
 }
 // ── SAVE/RESTORE open cards (used by renderEvents & renderMailing) ─────────
 function _saveOpen(prefix){
@@ -1755,11 +1713,10 @@ function renderEvents(){
         pipeCell='<button class="btn-piste" data-action="convertEnPisteEvent" data-id="'+p.id+'" style="font-size:11px;padding:4px 8px;white-space:nowrap">Convertir en piste</button>';
       }
       const hasPiste=isPiste||inPipe;
-      const statutBadge='<span class="badge '+(EVT_STATUT_BADGE[p.statut||'Présent']||'b-present')+'">'+( p.statut||'Présent')+'</span>';
+      var evtAction=EVT_STATUT_ACTION[p.statut||'Présent']||'—';
       return '<tr style="cursor:pointer'+(p.converted?';opacity:0.7':'')+'" data-action="editParticipant" data-id="'+p.id+'" title="Cliquer pour modifier">'
         +'<td style="padding:7px 8px;font-size:12px;font-weight:500">'+p.nom+'</td>'
         +'<td style="padding:7px 8px;font-size:12px;color:var(--tx2)">'+p.societe+'</td>'
-        +'<td style="padding:7px 8px;font-size:12px;color:var(--tx2)">'+(p.poste||'—')+'</td>'
         +'<td style="padding:7px 8px;font-size:11px;color:var(--txm)">'+(p.email||'—')+'</td>'
         +'<td style="padding:7px 8px" onclick="event.stopPropagation()">'
           +'<select style="font-size:11px;padding:3px 6px;border-radius:4px;border:0.5px solid var(--bm);background:var(--bg2);color:var(--tx);cursor:pointer" '
@@ -1767,6 +1724,7 @@ function renderEvents(){
             +EVT_STATUT_LIST.map(function(s){return'<option value="'+s+'"'+(p.statut===s?' selected':'')+'>'+s+'</option>';}).join('')
           +'</select>'
         +'</td>'
+        +'<td style="padding:7px 8px;white-space:nowrap">'+campActionTag(evtAction)+'</td>'
         +'<td style="padding:7px 8px;text-align:right">'
           +(hasPiste
             ?'<span class="badge b-piste" style="font-size:10px">Piste ✓</span>'
@@ -1829,8 +1787,6 @@ function renderEvents(){
           +'<div class="efield"><label>Goodies</label><input type="text" value="'+(ed.goodies||'')+'" placeholder="T-shirt, clé USB…" data-evt="'+e+'" data-field="goodies" class="evt-input"></div>'
           +'<div class="efield"><label>Coût (Ar)</label><input type="number" min="0" value="'+(ed.cout||'')+'" placeholder="0" data-evt="'+e+'" data-field="cout" class="evt-input"></div>'
         +'</div>'
-        // Action tracking panel
-        +buildCampActionPanel('evt',e,ed)
         // Participants table
         +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">'
           +'<div style="font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.05em">'
@@ -1838,13 +1794,18 @@ function renderEvents(){
           +'</div>'
           +'<button class="btn-piste" style="font-size:11px;padding:4px 10px" data-action="addParticipant" data-id="'+e+'"><i class="ti ti-user-plus" style="font-size:11px;margin-right:4px"></i>Ajouter</button>'
         +'</div>'
+        // Actions recap
+        +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;padding:7px 10px;background:var(--bg2);border-radius:6px;border:0.5px solid var(--bl);align-items:center">'
+          +'<span style="font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.04em;margin-right:4px">Actions :</span>'
+          +campActionRecap(evtParticipants,EVT_STATUT_ACTION)
+        +'</div>'
         +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">'
           +'<thead><tr>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Nom</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Société</th>'
-            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Poste</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Email</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Statut</th>'
+            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Action</th>'
             +'<th style="padding:6px 8px;border-bottom:0.5px solid var(--bl)"></th>'
           +'</tr></thead>'
           +'<tbody>'+partRows+'</tbody>'
@@ -2272,8 +2233,6 @@ document.addEventListener('click',function(e){
   else if(act==='addMailingContact'){e.stopPropagation();openAddMailingContactModal(id);}
   else if(act==='importMailingCSV'){e.stopPropagation();openImportMailingCSV(id);}
   else if(act==='delMailing'){e.stopPropagation();delMailing(id);}
-  else if(act==='toggleCampStatut'){e.stopPropagation();
-    toggleCampagneStatut(btn.getAttribute('data-camp-type'),btn.getAttribute('data-camp-id'));}
   else if(act==='editMailingContact'){
     e.stopPropagation();
     const mid=btn.getAttribute('data-mailing-id');
@@ -2344,8 +2303,8 @@ document.addEventListener('keydown',function(e){
 
 
 // ── MAILING ────────────────────────────────────────────────────────────────
-const MAIL_STATUS=['Non envoyé','Envoyé','Ouvert','Répondu','Sans réponse'];
-const MAIL_STATUS_BADGE={'Non envoyé':'b-mailing','Envoyé':'b-envoye','Ouvert':'b-ouvert','Répondu':'b-repondu','Sans réponse':'b-sans-rep'};
+const MAIL_STATUS=['Non envoyé','Envoyé','Ouvert','Répondu','Sans suite'];
+const MAIL_STATUS_BADGE={'Non envoyé':'b-mailing','Envoyé':'b-envoye','Ouvert':'b-ouvert','Répondu':'b-repondu','Sans suite':'b-sans-rep'};
 let currentMailingId=null, csvParsedData=[], mlCsvParsedData=[];
 
 function renderMailing(){
@@ -2377,7 +2336,6 @@ function renderMailing(){
           +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
             +'<i class="ti ti-mail" style="color:var(--ac);font-size:14px;flex-shrink:0"></i>'
             +'<span style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+m.nom+'</span>'
-            +'<span style="font-size:11px;font-weight:700;padding:1px 7px;border-radius:20px;flex-shrink:0;background:'+(m.statut==='ouverte'?'rgba(26,174,106,.13)':'rgba(128,128,128,.1)')+';color:'+(m.statut==='ouverte'?'#1AAE6A':'var(--txm)')+'">'+( m.statut==='ouverte'?'● OUVERTE':'● FERMÉE')+'</span>'
             +(m.assigne?'<span style="font-size:11px;color:#1AAE6A;flex-shrink:0">· '+m.assigne+'</span>':'')
             +(m.date?'<span style="font-size:11px;color:var(--tx2);flex-shrink:0"><i class="ti ti-calendar" style="font-size:10px;margin-right:3px"></i>'+new Date(m.date+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})+'</span>':'')
           +'</div>'
@@ -2403,24 +2361,27 @@ function renderMailing(){
       // Detail panel
       +'<div id="'+sid+'" style="display:none;margin-top:14px;padding-top:14px;border-top:0.5px solid var(--bl)">'
         +(m.objet?'<div style="font-size:12px;color:var(--tx2);margin-bottom:10px"><i class="ti ti-mail-opened" style="margin-right:5px"></i>'+m.objet+'</div>':'')
-        +buildCampActionPanel('mailing',m.id,m)
+        // Actions recap
+        +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;padding:7px 10px;background:var(--bg2);border-radius:6px;border:0.5px solid var(--bl);align-items:center">'
+          +'<span style="font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.04em;margin-right:4px">Actions :</span>'
+          +campActionRecap(m.contacts,MAIL_STATUS_ACTION)
+        +'</div>'
         +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
           +'<thead><tr>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:18%">Nom</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:15%">Société</th>'
-            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:12%">Poste</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:15%">Email</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:12%">Statut</th>'
-            +'<th style="text-align:right;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Actions</th>'
+            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Action</th>'
+            +'<th style="text-align:right;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)"></th>'
           +'</tr></thead>'
           +'<tbody>'
             +m.contacts.map(function(c){
-              const badgeCls=MAIL_STATUS_BADGE[c.statut]||'b-mailing';
               const hasPiste=!!c.piste_id;
+              const mailAction=MAIL_STATUS_ACTION[c.statut||'Non envoyé']||'—';
               return '<tr style="cursor:pointer" data-action="editMailingContact" data-mailing-id="'+m.id+'" data-contact-id="'+c.id+'" title="Cliquer pour modifier">'
                 +'<td style="padding:7px 8px;font-weight:500">'+c.nom+'</td>'
                 +'<td style="padding:7px 8px;color:var(--tx2)">'+c.societe+'</td>'
-                +'<td style="padding:7px 8px;color:var(--tx2)">'+(c.poste||'—')+'</td>'
                 +'<td style="padding:7px 8px;font-size:11px;color:var(--txm)">'+(c.email||'—')+'</td>'
                 +'<td style="padding:7px 8px" onclick="event.stopPropagation()">'
                   +'<select style="font-size:11px;padding:3px 6px;border-radius:4px;border:0.5px solid var(--bm);background:var(--bg2);color:var(--tx);cursor:pointer" '
@@ -2428,6 +2389,7 @@ function renderMailing(){
                     +MAIL_STATUS.map(function(s){return'<option value="'+s+'"'+(c.statut===s?' selected':'')+'>'+s+'</option>';}).join('')
                   +'</select>'
                 +'</td>'
+                +'<td style="padding:7px 8px;white-space:nowrap">'+campActionTag(mailAction)+'</td>'
                 +'<td style="padding:7px 8px;text-align:right;white-space:nowrap">'
                   +(hasPiste
                     ?'<span class="badge b-ouvert" style="font-size:10px">Piste ✓</span>'
