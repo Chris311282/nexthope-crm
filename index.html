@@ -2516,98 +2516,91 @@ function openImportMailingCSV(mailingId){
   document.getElementById('import-mailing-modal').style.display='flex';
 }
 
+// ── Shared CSV parser (auto-detects , vs ; separator, handles quotes + accents) ──
+function parseMailingCSV(text){
+  text=text.replace(/^﻿/,''); // strip UTF-8 BOM (Excel)
+  var lines=text.split(/\r?\n/).filter(function(l){return l.trim();});
+  if(lines.length<2)return[];
+  var firstLine=lines[0];
+  // Auto-detect separator
+  var sep=(firstLine.split(';').length>firstLine.split(',').length)?';':',';
+  // Normalize header: lowercase, strip quotes, strip accents
+  function norm(s){return s.trim().toLowerCase().replace(/['"]/g,'').normalize('NFD').replace(/[̀-ͯ]/g,'');}
+  var headers=firstLine.split(sep).map(norm);
+  // Parse a line respecting quoted fields
+  function splitLine(line){
+    var res=[],cur='',inQ=false;
+    for(var i=0;i<line.length;i++){
+      var c=line[i];
+      if(c==='"'){inQ=!inQ;}
+      else if(c===sep&&!inQ){res.push(cur.trim().replace(/^["']|["']$/g,''));cur='';}
+      else{cur+=c;}
+    }
+    res.push(cur.trim().replace(/^["']|["']$/g,''));
+    return res;
+  }
+  function get(cols,keys){
+    for(var k=0;k<keys.length;k++){
+      var nk=norm(keys[k]);
+      var idx=headers.findIndex(function(h){return h.includes(nk);});
+      if(idx>=0&&idx<cols.length&&cols[idx])return cols[idx];
+    }
+    return'';
+  }
+  return lines.slice(1).map(function(line,i){
+    var cols=splitLine(line);
+    return{
+      id:'mc_'+uid()+'_'+i,
+      nom:get(cols,['nom','name','prenom','prénom','contact','full'])||('Contact '+(i+1)),
+      societe:get(cols,['soci','company','entreprise','organisation','org','etablissement'])||'',
+      poste:get(cols,['poste','titre','title','fonction','role','job'])||'',
+      secteur:get(cols,['secteur','sector','industrie','activite','domaine'])||'',
+      email:get(cols,['email','mail','courriel','e-mail'])||'',
+      tel:get(cols,['tel','phone','portable','mobile','fixe','numero'])||'',
+      statut:'Non envoyé',piste_id:null
+    };
+  }).filter(function(c){return c.nom;});
+}
+
+function showCsvPreview(data,tableId,countId,countText,moreSuffix){
+  var preview=data.slice(0,5).map(function(c){
+    return'<tr><td style="padding:3px 6px;font-size:11px">'+c.nom+'</td>'
+      +'<td style="padding:3px 6px;font-size:11px;color:var(--tx2)">'+c.societe+'</td>'
+      +'<td style="padding:3px 6px;font-size:11px;color:var(--txm)">'+c.email+'</td></tr>';
+  }).join('');
+  var tableEl=document.getElementById(tableId);
+  if(tableEl)tableEl.innerHTML='<table style="width:100%;border-collapse:collapse"><thead><tr>'
+    +'<th style="text-align:left;padding:3px 6px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Nom</th>'
+    +'<th style="text-align:left;padding:3px 6px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Société</th>'
+    +'<th style="text-align:left;padding:3px 6px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Email</th>'
+    +'</tr></thead><tbody>'+preview+'</tbody></table>'
+    +(data.length>5?'<div style="font-size:11px;color:var(--txm);padding:3px 6px">… et '+(data.length-5)+' autres</div>':'');
+  var countEl=document.getElementById(countId);
+  if(countEl)countEl.textContent=data.length+countText+(data.length>1?moreSuffix:'');
+}
+
 document.addEventListener('change',function(e){
   // CSV import in "new campaign" modal
   if(e.target.id==='ml-csv-file'){
-    const file=e.target.files[0];
-    if(!file)return;
-    const reader=new FileReader();
+    var file=e.target.files[0];if(!file)return;
+    var reader=new FileReader();
     reader.onload=function(ev){
-      const text=ev.target.result;
-      const lines=text.split(/\r?\n/).filter(function(l){return l.trim();});
-      if(lines.length<2){alert('Fichier vide ou invalide.');return;}
-      const headers=lines[0].split(',').map(function(h){return h.trim().toLowerCase().replace(/['"]/g,'');});
-      mlCsvParsedData=lines.slice(1).map(function(line,i){
-        const cols=line.split(',').map(function(c){return c.trim().replace(/^["']|["']$/g,'');});
-        const get=function(keys){
-          for(var k=0;k<keys.length;k++){
-            var idx=headers.findIndex(function(h){return h.includes(keys[k]);});
-            if(idx>=0&&cols[idx])return cols[idx];
-          }
-          return '';
-        };
-        return{
-          id:'mc_'+uid()+'_'+i,
-          nom:get(['nom','name','prenom','prénom'])||('Contact '+(i+1)),
-          societe:get(['soci','company','entreprise'])||'',
-          poste:get(['poste','titre','title','fonction'])||'',
-          secteur:get(['secteur','sector','industrie'])||'',
-          email:get(['email','mail','courriel'])||'',
-          tel:get(['tel','phone','portable','mobile'])||'',
-          statut:'Non envoyé',piste_id:null
-        };
-      }).filter(function(c){return c.nom;});
-      var countEl=document.getElementById('ml-csv-count-text');
-      if(countEl)countEl.textContent=mlCsvParsedData.length+' contact'+(mlCsvParsedData.length>1?'s':'')+ ' détecté'+(mlCsvParsedData.length>1?'s':'');
-      var preview=mlCsvParsedData.slice(0,5).map(function(c){
-        return'<tr><td style="padding:3px 6px;font-size:11px">'+c.nom+'</td>'
-          +'<td style="padding:3px 6px;font-size:11px;color:var(--tx2)">'+c.societe+'</td>'
-          +'<td style="padding:3px 6px;font-size:11px;color:var(--txm)">'+c.email+'</td></tr>';
-      }).join('');
-      var tableEl=document.getElementById('ml-csv-preview-table');
-      if(tableEl)tableEl.innerHTML='<table style="width:100%;border-collapse:collapse"><thead><tr>'
-        +'<th style="text-align:left;padding:3px 6px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Nom</th>'
-        +'<th style="text-align:left;padding:3px 6px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Société</th>'
-        +'<th style="text-align:left;padding:3px 6px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Email</th>'
-        +'</tr></thead><tbody>'+preview+'</tbody></table>'
-        +(mlCsvParsedData.length>5?'<div style="font-size:11px;color:var(--txm);padding:3px 6px">… et '+(mlCsvParsedData.length-5)+' autres</div>':'');
+      mlCsvParsedData=parseMailingCSV(ev.target.result);
+      if(!mlCsvParsedData.length){alert('Aucun contact détecté. Vérifiez le format du fichier.');return;}
+      showCsvPreview(mlCsvParsedData,'ml-csv-preview-table','ml-csv-count-text',' contact détecté','s');
       var pr=document.getElementById('ml-csv-preview');if(pr)pr.style.display='block';
     };
     reader.readAsText(file,'UTF-8');
   }
   // CSV file input (existing import modal)
   if(e.target.id==='csv-mailing-file'){
-    const file=e.target.files[0];
-    if(!file)return;
-    const reader=new FileReader();
+    var file=e.target.files[0];if(!file)return;
+    var reader=new FileReader();
     reader.onload=function(ev){
-      const text=ev.target.result;
-      const lines=text.split(/\r?\n/).filter(function(l){return l.trim();});
-      if(lines.length<2){alert('Fichier vide ou invalide.');return;}
-      const headers=lines[0].split(',').map(function(h){return h.trim().toLowerCase().replace(/['"]/g,'');});
-      csvParsedData=lines.slice(1).map(function(line,i){
-        const cols=line.split(',').map(function(c){return c.trim().replace(/^["']|["']$/g,'');});
-        const get=function(keys){
-          for(var k=0;k<keys.length;k++){
-            var idx=headers.findIndex(function(h){return h.includes(keys[k]);});
-            if(idx>=0&&cols[idx])return cols[idx];
-          }
-          return '';
-        };
-        return{
-          id:'mc_'+uid()+'_'+i,
-          nom:get(['nom','name','prenom','prénom'])||('Contact '+(i+1)),
-          societe:get(['soci','company','entreprise'])||'',
-          poste:get(['poste','titre','title','fonction'])||'',
-          secteur:get(['secteur','sector','industrie'])||'',
-          email:get(['email','mail','courriel'])||'',
-          tel:get(['tel','phone','portable','mobile'])||'',
-          statut:'Non envoyé',piste_id:null
-        };
-      }).filter(function(c){return c.nom;});
-      document.getElementById('csv-count').textContent=csvParsedData.length;
-      const preview=csvParsedData.slice(0,5).map(function(c){
-        return'<tr><td style="padding:4px 6px;font-size:11px">'+c.nom+'</td>'
-          +'<td style="padding:4px 6px;font-size:11px;color:var(--tx2)">'+c.societe+'</td>'
-          +'<td style="padding:4px 6px;font-size:11px;color:var(--txm)">'+c.email+'</td></tr>';
-      }).join('');
-      document.getElementById('csv-preview-table').innerHTML=
-        '<table style="width:100%;border-collapse:collapse"><thead><tr>'
-        +'<th style="text-align:left;padding:4px 6px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Nom</th>'
-        +'<th style="text-align:left;padding:4px 6px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Société</th>'
-        +'<th style="text-align:left;padding:4px 6px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Email</th>'
-        +'</tr></thead><tbody>'+preview+'</tbody></table>'
-        +(csvParsedData.length>5?'<div style="font-size:11px;color:var(--txm);padding:4px 6px">… et '+(csvParsedData.length-5)+' autres</div>':'');
+      csvParsedData=parseMailingCSV(ev.target.result);
+      if(!csvParsedData.length){alert('Aucun contact détecté. Vérifiez le format du fichier.');return;}
+      var countEl=document.getElementById('csv-count');if(countEl)countEl.textContent=csvParsedData.length;
+      showCsvPreview(csvParsedData,'csv-preview-table','csv-count','','');
       document.getElementById('csv-preview').style.display='block';
     };
     reader.readAsText(file,'UTF-8');
