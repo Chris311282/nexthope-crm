@@ -1798,7 +1798,7 @@ function renderEvents(){
             +(ed.lieu?'<span><i class="ti ti-map-pin" style="font-size:10px;margin-right:3px"></i>'+ed.lieu+'</span>':'')
           +'</div>'
           +'<div style="display:flex;gap:5px;flex-wrap:wrap">'
-            +[{l:'Invités',v:inv||'—',c:'var(--txm)'},{l:'Présents',v:nbPresents,c:color},{l:'Taux participation',v:inv>0?Math.round(nbPresents/inv*100)+'%':ptotal>0?Math.round(nbPresents/ptotal*100)+'%':'—',c:'#c97a10'},{l:'Pistes',v:pistesEvt,c:'#A01864'},{l:'Pipeline',v:oppsEvt,c:'#1A7AEA'}]
+            +[{l:'Invités',v:inv||'—',c:'var(--txm)'},{l:'Présents',v:nbPresents,c:color},{l:'Taux participation',v:inv>0?Math.round(nbPresents/inv*100)+'%':ptotal>0?Math.round(nbPresents/ptotal*100)+'%':'—',c:'#c97a10'},{l:'Pistes',v:pistesEvt,c:'#A01864'}]
             .concat(cout>0?[{l:'Coût total',v:cout.toLocaleString('fr-FR')+' Ar',c:'#7A1AEA'}]:[]).map(function(k){
               return '<div style="display:flex;flex-direction:column;align-items:center;padding:2px 7px;background:var(--bg);border:0.5px solid var(--bl);border-radius:6px;min-width:52px">'
                 +'<div style="font-size:15px;font-weight:600;line-height:1.3;color:'+k.c+'">'+k.v+'</div>'
