@@ -234,6 +234,7 @@ tr:hover td{background:var(--bg2)}
           </div>
         </div>
       </div>
+      <span id="sync-indicator" style="font-size:11px;display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:4px;color:var(--txm)"></span>
       <button class="btno" onclick="exportCSV()"><i class="ti ti-download"></i>Export</button>
       <button class="btno" onclick="doLogout()" style="padding:8px 10px" title="Déconnexion"><i class="ti ti-logout"></i></button>
     </div>
@@ -691,12 +692,22 @@ function syncWithFirebase(){
     opps=toArr(d.opps);
     mailings=toArr(d.mailings);
     evtData=d.evtData||{};
+    // Mettre à jour localStorage avec les données Firebase (évite données périmées au prochain rechargement)
+    try{localStorage.setItem('nh_crm_bak',JSON.stringify({participants:participants,pistes:pistes,opps:opps,mailings:mailings,evtData:evtData}));}catch(e){}
     applyNorm();
     refreshTab();
     startRealtimeSync();
   }).catch(function(e){
     console.warn('Firebase sync failed:', e.message);
   });
+}
+
+function setSyncStatus(state){
+  var el=document.getElementById('sync-indicator');
+  if(!el)return;
+  if(state==='saving')   el.innerHTML='<i class="ti ti-cloud-upload" style="font-size:12px"></i>Enregistrement...';
+  else if(state==='ok')  {el.innerHTML='<i class="ti ti-cloud-check" style="font-size:12px;color:#1AAE6A"></i><span style="color:#1AAE6A">Synchronisé</span>';setTimeout(function(){el.innerHTML='';},3000);}
+  else if(state==='err') el.innerHTML='<i class="ti ti-cloud-x" style="font-size:12px;color:#E24B4A"></i><span style="color:#E24B4A" title="Les données n\'ont pas pu être sauvegardées sur Firebase">Erreur sync</span>';
 }
 
 function startRealtimeSync(){
@@ -711,6 +722,8 @@ function startRealtimeSync(){
     opps=toArr(d.opps);
     mailings=toArr(d.mailings);
     evtData=d.evtData||{};
+    // Garder localStorage à jour pour éviter les données périmées au rechargement
+    try{localStorage.setItem('nh_crm_bak',JSON.stringify({participants:participants,pistes:pistes,opps:opps,mailings:mailings,evtData:evtData}));}catch(e){}
     refreshTab();
   });
 }
@@ -799,6 +812,7 @@ function persist(){
   // Always save locally first
   try{localStorage.setItem('nh_crm_bak',JSON.stringify(data));}catch(e){}
   // Save to Firebase via REST API
+  setSyncStatus('saving');
   currentUser.getIdToken().then(function(token){
     return fetch('https://nexthope-crm-default-rtdb.firebaseio.com/.json?auth='+token,{
       method:'PUT',
@@ -806,9 +820,9 @@ function persist(){
       body:JSON.stringify(data)
     });
   }).then(function(r){
-    if(r.ok)console.log('Firebase saved OK');
-    else console.error('Firebase save failed:',r.status);
-  }).catch(function(e){console.warn('Firebase save error:',e.message);});
+    if(r.ok){console.log('Firebase saved OK');setSyncStatus('ok');}
+    else{console.error('Firebase save failed:',r.status);setSyncStatus('err');}
+  }).catch(function(e){console.warn('Firebase save error:',e.message);setSyncStatus('err');});
 }
 // load() defined above
 
@@ -1779,7 +1793,7 @@ function renderEvents(){
             +(ed.lieu?'<span><i class="ti ti-map-pin" style="font-size:10px;margin-right:3px"></i>'+ed.lieu+'</span>':'')
           +'</div>'
           +'<div style="display:flex;gap:5px;flex-wrap:wrap">'
-            +[{l:'Invités',v:inv||'—',c:'var(--txm)'},{l:'Présents',v:nbPresents,c:color},{l:'Taux participation',v:inv>0?Math.round(nbPresents/inv*100)+'%':ptotal>0?Math.round(nbPresents/ptotal*100)+'%':'—',c:'#c97a10'},{l:'Pistes',v:pistesEvt,c:'#A01864'}]
+            +[{l:'Invités',v:inv||'—',c:'var(--txm)'},{l:'Présents',v:nbPresents,c:color},{l:'Taux participation',v:inv>0?Math.round(nbPresents/inv*100)+'%':ptotal>0?Math.round(nbPresents/ptotal*100)+'%':'—',c:'#c97a10'},{l:'Pistes',v:pistesEvt,c:'#A01864'},{l:'Pipeline',v:oppsEvt,c:'#1A7AEA'}]
             .concat(cout>0?[{l:'Coût total',v:cout.toLocaleString('fr-FR')+' Ar',c:'#7A1AEA'}]:[]).map(function(k){
               return '<div style="display:flex;flex-direction:column;align-items:center;padding:2px 7px;background:var(--bg);border:0.5px solid var(--bl);border-radius:6px;min-width:52px">'
                 +'<div style="font-size:15px;font-weight:600;line-height:1.3;color:'+k.c+'">'+k.v+'</div>'
@@ -1808,7 +1822,7 @@ function renderEvents(){
         // Participants table
         +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">'
           +'<div style="font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.05em">'
-            +nbInvites+' invités · '+nbPresents+' présents · '+nbConfirmes+' confirmés · '+nbAbsents+' absents'+(nbIndispo?' · '+nbIndispo+' indisponibles':'')
+            +nbInvites+' participants · '+nbPresents+' présents · '+nbConfirmes+' confirmés · '+nbAbsents+' absents'+(nbIndispo?' · '+nbIndispo+' indisponibles':'')
           +'</div>'
           +'<button class="btn-piste" style="font-size:11px;padding:4px 10px" data-action="addParticipant" data-id="'+e+'"><i class="ti ti-user-plus" style="font-size:11px;margin-right:4px"></i>Ajouter</button>'
         +'</div>'

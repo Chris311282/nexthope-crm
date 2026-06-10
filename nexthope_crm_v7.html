@@ -234,6 +234,7 @@ tr:hover td{background:var(--bg2)}
           </div>
         </div>
       </div>
+      <span id="sync-indicator" style="font-size:11px;display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:4px;color:var(--txm)"></span>
       <button class="btno" onclick="exportCSV()"><i class="ti ti-download"></i>Export</button>
       <button class="btno" onclick="doLogout()" style="padding:8px 10px" title="Déconnexion"><i class="ti ti-logout"></i></button>
     </div>
@@ -691,12 +692,22 @@ function syncWithFirebase(){
     opps=toArr(d.opps);
     mailings=toArr(d.mailings);
     evtData=d.evtData||{};
+    // Mettre à jour localStorage avec les données Firebase (évite données périmées au prochain rechargement)
+    try{localStorage.setItem('nh_crm_bak',JSON.stringify({participants:participants,pistes:pistes,opps:opps,mailings:mailings,evtData:evtData}));}catch(e){}
     applyNorm();
     refreshTab();
     startRealtimeSync();
   }).catch(function(e){
     console.warn('Firebase sync failed:', e.message);
   });
+}
+
+function setSyncStatus(state){
+  var el=document.getElementById('sync-indicator');
+  if(!el)return;
+  if(state==='saving')   el.innerHTML='<i class="ti ti-cloud-upload" style="font-size:12px"></i>Enregistrement...';
+  else if(state==='ok')  {el.innerHTML='<i class="ti ti-cloud-check" style="font-size:12px;color:#1AAE6A"></i><span style="color:#1AAE6A">Synchronisé</span>';setTimeout(function(){el.innerHTML='';},3000);}
+  else if(state==='err') el.innerHTML='<i class="ti ti-cloud-x" style="font-size:12px;color:#E24B4A"></i><span style="color:#E24B4A" title="Les données n\'ont pas pu être sauvegardées sur Firebase">Erreur sync</span>';
 }
 
 function startRealtimeSync(){
@@ -711,6 +722,8 @@ function startRealtimeSync(){
     opps=toArr(d.opps);
     mailings=toArr(d.mailings);
     evtData=d.evtData||{};
+    // Garder localStorage à jour pour éviter les données périmées au rechargement
+    try{localStorage.setItem('nh_crm_bak',JSON.stringify({participants:participants,pistes:pistes,opps:opps,mailings:mailings,evtData:evtData}));}catch(e){}
     refreshTab();
   });
 }
@@ -799,6 +812,7 @@ function persist(){
   // Always save locally first
   try{localStorage.setItem('nh_crm_bak',JSON.stringify(data));}catch(e){}
   // Save to Firebase via REST API
+  setSyncStatus('saving');
   currentUser.getIdToken().then(function(token){
     return fetch('https://nexthope-crm-default-rtdb.firebaseio.com/.json?auth='+token,{
       method:'PUT',
@@ -806,9 +820,9 @@ function persist(){
       body:JSON.stringify(data)
     });
   }).then(function(r){
-    if(r.ok)console.log('Firebase saved OK');
-    else console.error('Firebase save failed:',r.status);
-  }).catch(function(e){console.warn('Firebase save error:',e.message);});
+    if(r.ok){console.log('Firebase saved OK');setSyncStatus('ok');}
+    else{console.error('Firebase save failed:',r.status);setSyncStatus('err');}
+  }).catch(function(e){console.warn('Firebase save error:',e.message);setSyncStatus('err');});
 }
 // load() defined above
 
