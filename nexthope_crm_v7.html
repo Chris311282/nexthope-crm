@@ -2516,18 +2516,14 @@ function openImportMailingCSV(mailingId){
   document.getElementById('import-mailing-modal').style.display='flex';
 }
 
-// ── Shared CSV parser (auto-detects , vs ; separator, handles quotes + accents) ──
+// ── Shared CSV parser (auto-detects sep, skips empty header rows, handles quotes+accents) ──
 function parseMailingCSV(text){
-  text=text.replace(/^﻿/,''); // strip UTF-8 BOM (Excel)
-  var lines=text.split(/\r?\n/).filter(function(l){return l.trim();});
-  if(lines.length<2)return[];
-  var firstLine=lines[0];
-  // Auto-detect separator
-  var sep=(firstLine.split(';').length>firstLine.split(',').length)?';':',';
-  // Normalize header: lowercase, strip quotes, strip accents
+  text=text.replace(/^﻿/,''); // strip BOM
+  var allLines=text.split(/\r?\n/).filter(function(l){return l.trim();});
+  if(allLines.length<2)return[];
+  // Auto-detect separator on first line
+  var sep=(allLines[0].split(';').length>allLines[0].split(',').length)?';':',';
   function norm(s){return s.trim().toLowerCase().replace(/['"]/g,'').normalize('NFD').replace(/[̀-ͯ]/g,'');}
-  var headers=firstLine.split(sep).map(norm);
-  // Parse a line respecting quoted fields
   function splitLine(line){
     var res=[],cur='',inQ=false;
     for(var i=0;i<line.length;i++){
@@ -2539,27 +2535,51 @@ function parseMailingCSV(text){
     res.push(cur.trim().replace(/^["']|["']$/g,''));
     return res;
   }
-  function get(cols,keys){
+  // Skip blank/empty rows to find the real header line
+  var headerIdx=0;
+  for(var i=0;i<Math.min(allLines.length,5);i++){
+    if(splitLine(allLines[i]).some(function(c){return c.trim();})){headerIdx=i;break;}
+  }
+  var lines=allLines.slice(headerIdx);
+  if(lines.length<2)return[];
+  var headers=splitLine(lines[0]).map(norm);
+  // Find column index by partial keyword match
+  function col(keys){
     for(var k=0;k<keys.length;k++){
       var nk=norm(keys[k]);
       var idx=headers.findIndex(function(h){return h.includes(nk);});
-      if(idx>=0&&idx<cols.length&&cols[idx])return cols[idx];
+      if(idx>=0)return idx;
     }
-    return'';
+    return -1;
   }
+  // Pre-compute column indices once
+  // societe: "Nom Client" → matched by 'client'; "Société" by 'soci'
+  var iSoc =col(['client','soci','company','entreprise','organisation','org','etablissement']);
+  // nom (person): "Contact" first to avoid "Nom Client" being grabbed by 'nom'
+  var iNom =col(['contact','prenom','full','name']);
+  if(iNom<0){// fallback: 'nom' but only if not already used for société
+    var t=col(['nom']); if(t>=0&&t!==iSoc)iNom=t;
+  }
+  var iPost=col(['poste','titre','title','fonction','role','job']);
+  var iSect=col(['secteur','sector','industrie','activite','domaine']);
+  var iMail=col(['email','mail','courriel']);
+  var iTel =col(['tel','phone','portable','mobile','fixe','numero']);
+  function v(cols,idx){return idx>=0&&idx<cols.length?cols[idx]:'';}
   return lines.slice(1).map(function(line,i){
     var cols=splitLine(line);
+    var nom=v(cols,iNom), soc=v(cols,iSoc), mail=v(cols,iMail);
+    if(!nom&&!soc&&!mail)return null; // skip fully empty rows
     return{
       id:'mc_'+uid()+'_'+i,
-      nom:get(cols,['nom','name','prenom','prénom','contact','full'])||('Contact '+(i+1)),
-      societe:get(cols,['soci','company','entreprise','organisation','org','etablissement'])||'',
-      poste:get(cols,['poste','titre','title','fonction','role','job'])||'',
-      secteur:get(cols,['secteur','sector','industrie','activite','domaine'])||'',
-      email:get(cols,['email','mail','courriel','e-mail'])||'',
-      tel:get(cols,['tel','phone','portable','mobile','fixe','numero'])||'',
+      nom:nom||('Contact '+(i+1)),
+      societe:soc,
+      poste:v(cols,iPost),
+      secteur:v(cols,iSect),
+      email:mail,
+      tel:v(cols,iTel),
       statut:'Non envoyé',piste_id:null
     };
-  }).filter(function(c){return c.nom;});
+  }).filter(function(c){return c&&c.nom;});
 }
 
 function showCsvPreview(data,tableId,countId,countText,moreSuffix){
