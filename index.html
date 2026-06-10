@@ -8,7 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 var firebaseConfig={apiKey:"AIzaSyAh5L4AfdA2AiKw_TPigeOZnKHcbMAfSPY",authDomain:"nexthope-crm.firebaseapp.com",databaseURL:"https://nexthope-crm-default-rtdb.firebaseio.com",projectId:"nexthope-crm",storageBucket:"nexthope-crm.firebasestorage.app",messagingSenderId:"1081760615967",appId:"1:1081760615967:web:f1fec063dad47064560f2a"};
-var db=null,auth=null,currentUser=null,fbListenerOn=false;
+var db=null,auth=null,currentUser=null,fbListenerOn=false,fbSyncing=false;
 </script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -670,35 +670,39 @@ function load(){
 }
 
 function syncWithFirebase(){
-  console.log('Syncing with Firebase in background...');
+  fbSyncing=true;
+  setSyncStatus('saving');
   currentUser.getIdToken().then(function(token){
     return fetch('https://nexthope-crm-default-rtdb.firebaseio.com/.json?auth='+token);
-  }).then(function(resp){return resp.json();})
-  .then(function(d){
-    var fbParticipants = d ? toArr(d.participants) : [];
-    if(!fbParticipants.length){
-      // Firebase vide ou sans participants : on seed et on persiste
+  }).then(function(resp){
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    return resp.json();
+  }).then(function(d){
+    fbSyncing=false;
+    // Firebase retourne une erreur JSON (ex: permission denied)
+    if(d && d.error) throw new Error('Firebase: '+d.error);
+    // Firebase vraiment vide (aucune collection) → seed initial
+    var hasData=d&&(d.participants||d.mailings||d.pistes||d.opps);
+    if(!hasData){
       if(!participants.length) participants=JSON.parse(JSON.stringify(SEED_P));
       if(!Object.keys(evtData).length) evtData=JSON.parse(JSON.stringify(EVT_DEF));
-      persist();
-      applyNorm();
-      refreshTab();
-      startRealtimeSync();
+      persist(); applyNorm(); refreshTab(); startRealtimeSync();
       return;
     }
-    console.log('Firebase sync OK: '+fbParticipants.length+' participants');
-    participants=fbParticipants;
+    var fbParts=toArr(d.participants);
+    participants=fbParts.length ? fbParts : participants;
     pistes=toArr(d.pistes);
     opps=toArr(d.opps);
     mailings=toArr(d.mailings);
     evtData=d.evtData||{};
-    // Mettre à jour localStorage avec les données Firebase (évite données périmées au prochain rechargement)
     try{localStorage.setItem('nh_crm_bak',JSON.stringify({participants:participants,pistes:pistes,opps:opps,mailings:mailings,evtData:evtData}));}catch(e){}
-    applyNorm();
-    refreshTab();
-    startRealtimeSync();
+    setSyncStatus('ok');
+    applyNorm(); refreshTab(); startRealtimeSync();
   }).catch(function(e){
-    console.warn('Firebase sync failed:', e.message);
+    fbSyncing=false;
+    console.warn('Firebase sync failed:',e.message);
+    setSyncStatus('err');
+    startRealtimeSync();
   });
 }
 
@@ -808,6 +812,7 @@ function renderStats(){if(curTab==='stats-events')renderStatsEvents();else if(cu
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function persist(){
   if(!currentUser){console.warn('persist: no user');return;}
+  if(fbSyncing){console.warn('persist: sync in progress, skipped');return;}
   var data={participants:participants,pistes:pistes,opps:opps,mailings:mailings,evtData:evtData};
   // Always save locally first
   try{localStorage.setItem('nh_crm_bak',JSON.stringify(data));}catch(e){}
