@@ -742,13 +742,13 @@ function applyNorm(){
     if(!p.statut)p.statut='Présent';
     if(p.statut==='Excusé')p.statut='Absent';
   });
-  mailings.forEach(function(m){m.contacts.forEach(function(c){if(c.statut==='Sans réponse')c.statut='Sans suite';});});
+  mailings.forEach(function(m){if(!m.contacts)m.contacts=[];m.contacts.forEach(function(c){if(c.statut==='Sans réponse')c.statut='Sans suite';});});
   var AL={'ACCESBANQUE MADAGASACAR':'ACCÈS BANQUE MADAGASCAR','ACCESBANQUE MADAGASCAR':'ACCÈS BANQUE MADAGASCAR','ACCES BANQUE MADAGASCAR':'ACCÈS BANQUE MADAGASCAR','ACCESSBANQUE MADAGASCAR':'ACCÈS BANQUE MADAGASCAR','ACCESBANQUE':'ACCÈS BANQUE MADAGASCAR','TALYS GROUP':'GROUPE TALYS','GROUP TALYS':'GROUPE TALYS','TALYS GROUPE':'GROUPE TALYS'};
   function ns(s){if(!s)return s;var u=s.trim().toUpperCase();return AL[u]||u;}
   participants.forEach(function(p){p.societe=ns(p.societe);});
   pistes.forEach(function(p){p.societe=ns(p.societe);if(p.evtnom&&p.evtnom.startsWith('Mailing')){p.source=p.source||p.evtnom;p.evtnom='';}});
   opps.forEach(function(o){o.societe=ns(o.societe);});
-  mailings.forEach(function(m){m.contacts.forEach(function(c){c.societe=ns(c.societe);});});
+  mailings.forEach(function(m){if(!m.contacts)m.contacts=[];m.contacts.forEach(function(c){c.societe=ns(c.societe);});});
   Object.keys(evtData).forEach(function(k){if(k.startsWith('Mailing'))delete evtData[k];});
   Object.keys(EVT_DEF).forEach(function(k){if(!evtData[k])evtData[k]=Object.assign({},EVT_DEF[k]);});
   getEvtNames().forEach(function(k){
@@ -2355,6 +2355,7 @@ function renderMailing(){
 
   mailings.forEach(function(m){
     const sid='ml_'+m.id;
+    if(!m.contacts)m.contacts=[];
     const totalC=m.contacts.length;
     const envoye=m.contacts.filter(function(c){return c.statut!=='Non envoyé';}).length;
     const repondu=m.contacts.filter(function(c){return c.statut==='Répondu';}).length;
