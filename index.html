@@ -2447,7 +2447,8 @@ function renderMailing(){
                 +'<td style="padding:4px 8px" onclick="event.stopPropagation()">'
                   +'<input type="date" value="'+(c.dateEnvoi||'')+'" '
                     +(c.statut==='Non envoyé'?'disabled ':'')
-                    +'data-action="updateMailingDateEnvoi" data-mailing-id="'+m.id+'" data-contact-id="'+c.id+'" '
+                    +'onclick="event.stopPropagation()" '
+                    +'onchange="setMailDateEnvoi(\''+m.id+'\',\''+c.id+'\',this.value)" '
                     +'style="font-size:11px;padding:2px 4px;border-radius:4px;border:0.5px solid var(--bm);background:var(--bg2);color:var(--tx);min-width:128px;'+(c.statut==='Non envoyé'?'opacity:0.35;cursor:not-allowed':'cursor:pointer')+'">'
                 +'</td>'
                 +'<td style="padding:7px 8px" onclick="event.stopPropagation()">'
@@ -2668,16 +2669,13 @@ document.addEventListener('change',function(e){
     const c=m.contacts.find(function(x){return x.id===cid;});
     if(c){c.statut=e.target.value;persist();renderMailing();}
   }
-  // Date envoi update
-  if(e.target.getAttribute('data-action')==='updateMailingDateEnvoi'){
-    const mid=e.target.getAttribute('data-mailing-id');
-    const cid=e.target.getAttribute('data-contact-id');
-    const m=mailings.find(function(x){return x.id===mid;});
-    if(!m)return;
-    const c=m.contacts.find(function(x){return x.id===cid;});
-    if(c){c.dateEnvoi=e.target.value||null;persist();renderMailing();}
-  }
 });
+function setMailDateEnvoi(mid,cid,val){
+  var m=mailings.find(function(x){return x.id===mid;});
+  if(!m)return;
+  var c=m.contacts.find(function(x){return x.id===cid;});
+  if(c){c.dateEnvoi=val||null;persist();renderMailing();}
+}
 
 function importMailingCSV(){
   if(!csvParsedData.length){alert('Aucun contact à importer. Vérifiez le fichier CSV.');return;}
