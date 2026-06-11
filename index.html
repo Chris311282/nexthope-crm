@@ -2293,6 +2293,7 @@ document.addEventListener('click',function(e){
   else if(act==='importMailingCSV'){e.stopPropagation();openImportMailingCSV(id);}
   else if(act==='delMailing'){e.stopPropagation();delMailing(id);}
   else if(act==='editMailingContact'){
+    if(e.target.closest('input,select,button'))return;
     e.stopPropagation();
     const mid=btn.getAttribute('data-mailing-id');
     const cid=btn.getAttribute('data-contact-id');
