@@ -1676,18 +1676,30 @@ function updateEvtPresents(evtName){
 
 // ── CAMPAIGN ACTION HELPERS ────────────────────────────────────────────────
 const EVT_STATUT_ACTION={'Invité':'À relancer','Confirmé':'Rappel J-1','Présent':'—','Absent':'—','Indisponible':'—'};
-const MAIL_STATUS_ACTION={'Non envoyé':'À envoyer','Envoyé':'En attente de retour','Pas de retour':'Relancer J+7','Indisponible':'RDV à planifier','Pas intéressé':'—','RDV planifié':'Confirmer la date','RDV effectué':'—'};
-const CAMP_ACTION_COLOR={'À relancer':'#c97a10','Rappel J-1':'#1A7AEA','Suivi commercial':'#1AAE6A','À envoyer':'#c97a10','À appeler':'#7A1AEA','Prochain évènement':'#8A5AEA','En attente de retour':'#6b7280','Relancer J+7':'#b45309','RDV à planifier':'#6d28d9','Confirmer la date':'#1d4ed8','—':'var(--txm)'};
+const MAIL_STATUS_ACTION={'Non envoyé':'À envoyer','Envoyé':'En attente de retour','Pas de retour':'Relancer J+7','Indisponible':'À relancer ultérieurement','Pas intéressé':'—','RDV planifié':'Entretien à préparer','RDV effectué':'—'};
+const CAMP_ACTION_COLOR={'À relancer':'#c97a10','Rappel J-1':'#1A7AEA','Suivi commercial':'#1AAE6A','À envoyer':'#c97a10','À appeler':'#7A1AEA','Prochain évènement':'#8A5AEA','En attente de retour':'#6b7280','Relancer':'#b45309','Pas de retour':'#92400e','Relancer J+7':'#b45309','À relancer ultérieurement':'#6d28d9','Entretien à préparer':'#1d4ed8','—':'var(--txm)'};
 function campActionTag(action){
   var c=CAMP_ACTION_COLOR[action]||'var(--txm)';
   return action==='—'
     ?'<span style="font-size:11px;color:var(--txm)">—</span>'
     :'<span style="font-size:11px;font-weight:600;color:'+c+'">→ '+action+'</span>';
 }
-function campActionRecap(items,actionMap){
+function getMailAction(c){
+  var statut=c.statut||'Non envoyé';
+  if(statut==='Envoyé'){
+    if(!c.dateEnvoi)return'En attente de retour';
+    var days=Math.floor((Date.now()-new Date(c.dateEnvoi+'T00:00:00').getTime())/86400000);
+    if(days>=5)return'Pas de retour';
+    if(days>=2)return'Relancer';
+    return'En attente de retour';
+  }
+  return MAIL_STATUS_ACTION[statut]||'—';
+}
+function campActionRecap(items,actionMapOrFn){
+  var getA=typeof actionMapOrFn==='function'?actionMapOrFn:function(it){return actionMapOrFn[it.statut]||'—';};
   var counts={};
   items.forEach(function(it){
-    var a=actionMap[it.statut]||'—';
+    var a=getA(it);
     counts[a]=(counts[a]||0)+1;
   });
   return Object.keys(counts).filter(function(a){return a!=='—';}).map(function(a){
@@ -2412,25 +2424,31 @@ function renderMailing(){
         // Actions recap
         +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;padding:7px 10px;background:var(--bg2);border-radius:6px;border:0.5px solid var(--bl);align-items:center">'
           +'<span style="font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.04em;margin-right:4px">Actions :</span>'
-          +campActionRecap(m.contacts,MAIL_STATUS_ACTION)
+          +campActionRecap(m.contacts,getMailAction)
         +'</div>'
         +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
           +'<thead><tr>'
-            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:18%">Nom</th>'
-            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:15%">Société</th>'
-            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:15%">Email</th>'
-            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:12%">Statut</th>'
+            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:16%">Nom</th>'
+            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:14%">Société</th>'
+            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:14%">Email</th>'
+            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:10%">Date envoi</th>'
+            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:11%">Statut</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Action</th>'
             +'<th style="text-align:right;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)"></th>'
           +'</tr></thead>'
           +'<tbody>'
             +m.contacts.map(function(c){
               const hasPiste=!!c.piste_id;
-              const mailAction=MAIL_STATUS_ACTION[c.statut||'Non envoyé']||'—';
+              const mailAction=getMailAction(c);
               return '<tr style="cursor:pointer" data-action="editMailingContact" data-mailing-id="'+m.id+'" data-contact-id="'+c.id+'" title="Cliquer pour modifier">'
                 +'<td style="padding:7px 8px;font-weight:500">'+c.nom+'</td>'
                 +'<td style="padding:7px 8px;color:var(--tx2)">'+c.societe+'</td>'
                 +'<td style="padding:7px 8px;font-size:11px;color:var(--txm)">'+(c.email||'—')+'</td>'
+                +'<td style="padding:4px 8px" onclick="event.stopPropagation()">'
+                  +'<input type="date" value="'+(c.dateEnvoi||'')+'" '
+                    +'data-action="updateMailingDateEnvoi" data-mailing-id="'+m.id+'" data-contact-id="'+c.id+'" '
+                    +'style="font-size:11px;padding:2px 4px;border-radius:4px;border:0.5px solid var(--bm);background:var(--bg2);color:var(--tx);width:100%;max-width:120px;cursor:pointer">'
+                +'</td>'
                 +'<td style="padding:7px 8px" onclick="event.stopPropagation()">'
                   +'<div style="position:relative;display:inline-block">'
                     +'<span class="badge '+(MAIL_STATUS_BADGE[c.statut||'Non envoyé']||'b-mailing')+'" style="font-size:11px;padding:2px 8px;pointer-events:none;white-space:nowrap">'+(c.statut||'Non envoyé')+'</span>'
@@ -2646,6 +2664,15 @@ document.addEventListener('change',function(e){
     if(!m)return;
     const c=m.contacts.find(function(x){return x.id===cid;});
     if(c){c.statut=e.target.value;persist();renderMailing();}
+  }
+  // Date envoi update
+  if(e.target.getAttribute('data-action')==='updateMailingDateEnvoi'){
+    const mid=e.target.getAttribute('data-mailing-id');
+    const cid=e.target.getAttribute('data-contact-id');
+    const m=mailings.find(function(x){return x.id===mid;});
+    if(!m)return;
+    const c=m.contacts.find(function(x){return x.id===cid;});
+    if(c){c.dateEnvoi=e.target.value||null;persist();renderMailing();}
   }
 });
 
