@@ -2482,7 +2482,7 @@ function renderMailing(){
       // Detail panel
       +'<div id="'+sid+'" style="display:none;margin-top:14px;padding-top:14px;border-top:0.5px solid var(--bl)">'
         +(m.objet?'<div style="font-size:12px;color:var(--tx2);margin-bottom:10px"><i class="ti ti-mail-opened" style="margin-right:5px"></i>'+m.objet+'</div>':'')
-        +commStatsHTML(m.contacts)
+        +commStatsHTML(displayC)
         // Actions recap
         +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;padding:7px 10px;background:var(--bg2);border-radius:6px;border:0.5px solid var(--bl);align-items:center">'
           +'<span style="font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.04em;margin-right:4px">Actions :</span>'
