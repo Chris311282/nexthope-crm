@@ -2728,8 +2728,12 @@ function openEditMailingContact(mailingId, contactId){
   document.getElementById('emc-email').value=c.email||'';
   document.getElementById('emc-tel').value=c.tel||'';
   document.getElementById('emc-statut').value=c.statut||'Non envoyé';
+  var dateDisabled=(c.statut||'Non envoyé')==='Non envoyé';
   document.getElementById('emc-date-envoi').value=c.dateEnvoi||'';
-  document.getElementById('emc-date-envoi').disabled=(c.statut||'Non envoyé')==='Non envoyé';
+  document.getElementById('emc-date-envoi').disabled=dateDisabled;
+  document.getElementById('emc-date-envoi-wrap').style.opacity=dateDisabled?'0.45':'1';
+  document.getElementById('emc-date-envoi-wrap').style.cursor=dateDisabled?'not-allowed':'';
+  document.getElementById('emc-date-envoi-hint').style.display=dateDisabled?'block':'none';
   const modal=document.getElementById('edit-mailing-contact-modal');
   modal.setAttribute('data-mailing-id', mailingId);
   modal.setAttribute('data-contact-id', contactId);
@@ -2922,7 +2926,11 @@ document.addEventListener('click',function(e){
           <option>RDV planifié</option><option>RDV effectué</option>
         </select>
       </div>
-      <div class="fg"><label class="flabel">Date d'envoi</label><input id="emc-date-envoi" type="date"></div>
+      <div class="fg" id="emc-date-envoi-wrap">
+        <label class="flabel">Date d'envoi</label>
+        <input id="emc-date-envoi" type="date" style="width:100%;box-sizing:border-box">
+        <span id="emc-date-envoi-hint" style="display:none;font-size:10px;color:var(--txm);margin-top:3px"><i class="ti ti-info-circle" style="font-size:10px;margin-right:3px"></i>Disponible une fois le statut passé à "Envoyé"</span>
+      </div>
     </div>
     <div class="fact">
       <button class="bcancel" onclick="closeModals()">Annuler</button>
