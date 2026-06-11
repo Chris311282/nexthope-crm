@@ -1676,8 +1676,8 @@ function updateEvtPresents(evtName){
 
 // ── CAMPAIGN ACTION HELPERS ────────────────────────────────────────────────
 const EVT_STATUT_ACTION={'Invité':'À relancer','Confirmé':'Rappel J-1','Présent':'—','Absent':'—','Indisponible':'—'};
-const MAIL_STATUS_ACTION={'Non envoyé':'À envoyer','Envoyé':'En attente de retour','Pas de retour':'Relancer J+7','Indisponible':'À relancer ultérieurement','Pas intéressé':'—','RDV planifié':'Entretien à préparer','RDV effectué':'—'};
-const CAMP_ACTION_COLOR={'À relancer':'#c97a10','Rappel J-1':'#1A7AEA','Suivi commercial':'#1AAE6A','À envoyer':'#c97a10','À appeler':'#7A1AEA','Prochain évènement':'#8A5AEA','En attente de retour':'#6b7280','Relancer':'#b45309','Pas de retour':'#92400e','Relancer J+7':'#b45309','À relancer ultérieurement':'#6d28d9','Entretien à préparer':'#1d4ed8','—':'var(--txm)'};
+const MAIL_STATUS_ACTION={'Non envoyé':'À envoyer','Envoyé':'En attente de retour','Pas de retour':'Relancer J+7','Indisponible':'À relancer ultérieurement','Pas intéressé':'Envoi catalogue','RDV planifié':'Entretien à préparer','RDV effectué':'—'};
+const CAMP_ACTION_COLOR={'À relancer':'#c97a10','Rappel J-1':'#1A7AEA','Suivi commercial':'#1AAE6A','À envoyer':'#c97a10','À appeler':'#7A1AEA','Prochain évènement':'#8A5AEA','En attente de retour':'#6b7280','Relancer':'#b45309','Pas de retour':'#92400e','Relancer J+7':'#b45309','À relancer ultérieurement':'#6d28d9','Entretien à préparer':'#1d4ed8','Envoi catalogue':'#0f766e','—':'var(--txm)'};
 function campActionTag(action){
   var c=CAMP_ACTION_COLOR[action]||'var(--txm)';
   return action==='—'
@@ -2448,7 +2448,7 @@ function renderMailing(){
                   +'<input type="date" value="'+(c.dateEnvoi||'')+'" '
                     +(c.statut==='Non envoyé'?'disabled ':'')
                     +'data-action="updateMailingDateEnvoi" data-mailing-id="'+m.id+'" data-contact-id="'+c.id+'" '
-                    +'style="font-size:11px;padding:2px 4px;border-radius:4px;border:0.5px solid var(--bm);background:var(--bg2);color:var(--tx);width:100%;max-width:120px;'+(c.statut==='Non envoyé'?'opacity:0.35;cursor:not-allowed':'cursor:pointer')+'">'
+                    +'style="font-size:11px;padding:2px 4px;border-radius:4px;border:0.5px solid var(--bm);background:var(--bg2);color:var(--tx);min-width:128px;'+(c.statut==='Non envoyé'?'opacity:0.35;cursor:not-allowed':'cursor:pointer')+'">'
                 +'</td>'
                 +'<td style="padding:7px 8px" onclick="event.stopPropagation()">'
                   +'<div style="position:relative;display:inline-block">'
@@ -2463,7 +2463,9 @@ function renderMailing(){
                 +'<td style="padding:7px 8px;text-align:right;white-space:nowrap">'
                   +(hasPiste
                     ?'<span class="badge b-ouvert" style="font-size:10px">Piste ✓</span>'
-                    :'<button class="btn-piste" style="font-size:11px;padding:4px 8px" data-action="mailingToPiste" data-mailing-id="'+m.id+'" data-contact-id="'+c.id+'">Convertir en piste</button>')
+                    :(c.statut==='RDV planifié'
+                      ?'<button class="btn-piste" style="font-size:11px;padding:4px 8px" data-action="mailingToPiste" data-mailing-id="'+m.id+'" data-contact-id="'+c.id+'">Convertir en piste</button>'
+                      :'<button disabled style="font-size:11px;padding:4px 8px;opacity:0.35;cursor:not-allowed;border-radius:var(--rm);border:none;background:var(--bg2);color:var(--txm)">Convertir en piste</button>'))
                   +'<button class="abtn" data-action="delMailingContact" data-mailing-id="'+m.id+'" data-contact-id="'+c.id+'" style="padding:2px 4px;margin-left:4px"><i class="ti ti-trash" style="font-size:12px"></i></button>'
                 +'</td>'
                 +'</tr>';
