@@ -150,15 +150,21 @@ tr:hover td{background:var(--bg2)}
 .submenu-item.active{color:var(--ac);background:var(--bg2)}
 .b-envoye{background:#e6f1fb;color:#0c447c}
 .b-ouvert{background:#e6f6ed;color:#145c38}
-.b-repondu{background:#f1efff;color:#3c3489}
-.b-sans-rep{background:#f1efe8;color:#5f5e5a}
 .b-mailing{background:#fef3e2;color:#9a5800}
+.b-pas-retour{background:#fff7e6;color:#b45309}
+.b-indispo-mail{background:#f5f0ff;color:#6d28d9}
+.b-pas-int{background:#fef2f2;color:#b91c1c}
+.b-rdv-plan{background:#eff6ff;color:#1d4ed8}
+.b-rdv-ok{background:#f0fdf4;color:#065f46}
 @media(prefers-color-scheme:dark){
   .b-envoye{background:#0c2540;color:#85b7eb}
   .b-ouvert{background:#0f2e1e;color:#5dcaa5}
-  .b-repondu{background:#1e1a3a;color:#afa9ec}
-  .b-sans-rep{background:#3a3835;color:#b4b2a9}
   .b-mailing{background:#3d2e10;color:#f5c97a}
+  .b-pas-retour{background:#3d2a00;color:#fbbf24}
+  .b-indispo-mail{background:#2e1a52;color:#c4b5fd}
+  .b-pas-int{background:#3b0a0a;color:#fca5a5}
+  .b-rdv-plan{background:#0a1f3d;color:#93c5fd}
+  .b-rdv-ok{background:#052e16;color:#6ee7b7}
 }
 
 .b-invite{background:#fef3e2;color:#9a5800}
@@ -742,7 +748,11 @@ function applyNorm(){
     if(!p.statut)p.statut='Présent';
     if(p.statut==='Excusé')p.statut='Absent';
   });
-  mailings.forEach(function(m){if(!m.contacts)m.contacts=[];m.contacts.forEach(function(c){if(c.statut==='Sans réponse')c.statut='Sans suite';});});
+  mailings.forEach(function(m){if(!m.contacts)m.contacts=[];m.contacts.forEach(function(c){
+    if(c.statut==='Sans réponse'||c.statut==='Sans suite')c.statut='Pas de retour';
+    else if(c.statut==='Ouvert')c.statut='Envoyé';
+    else if(c.statut==='Répondu')c.statut='RDV planifié';
+  });});
   var AL={'ACCESBANQUE MADAGASACAR':'ACCÈS BANQUE MADAGASCAR','ACCESBANQUE MADAGASCAR':'ACCÈS BANQUE MADAGASCAR','ACCES BANQUE MADAGASCAR':'ACCÈS BANQUE MADAGASCAR','ACCESSBANQUE MADAGASCAR':'ACCÈS BANQUE MADAGASCAR','ACCESBANQUE':'ACCÈS BANQUE MADAGASCAR','TALYS GROUP':'GROUPE TALYS','GROUP TALYS':'GROUPE TALYS','TALYS GROUPE':'GROUPE TALYS'};
   function ns(s){if(!s)return s;var u=s.trim().toUpperCase();return AL[u]||u;}
   participants.forEach(function(p){p.societe=ns(p.societe);});
@@ -1666,8 +1676,8 @@ function updateEvtPresents(evtName){
 
 // ── CAMPAIGN ACTION HELPERS ────────────────────────────────────────────────
 const EVT_STATUT_ACTION={'Invité':'À relancer','Confirmé':'Rappel J-1','Présent':'—','Absent':'—','Indisponible':'—'};
-const MAIL_STATUS_ACTION={'Non envoyé':'À envoyer','Envoyé':'À relancer','Ouvert':'À appeler','Répondu':'Suivi commercial','Sans suite':'—'};
-const CAMP_ACTION_COLOR={'À relancer':'#c97a10','Rappel J-1':'#1A7AEA','Suivi commercial':'#1AAE6A','À envoyer':'#c97a10','À appeler':'#7A1AEA','Prochain évènement':'#8A5AEA','—':'var(--txm)'};
+const MAIL_STATUS_ACTION={'Non envoyé':'À envoyer','Envoyé':'En attente de retour','Pas de retour':'Relancer J+7','Indisponible':'RDV à planifier','Pas intéressé':'—','RDV planifié':'Confirmer la date','RDV effectué':'—'};
+const CAMP_ACTION_COLOR={'À relancer':'#c97a10','Rappel J-1':'#1A7AEA','Suivi commercial':'#1AAE6A','À envoyer':'#c97a10','À appeler':'#7A1AEA','Prochain évènement':'#8A5AEA','En attente de retour':'#6b7280','Relancer J+7':'#b45309','RDV à planifier':'#6d28d9','Confirmer la date':'#1d4ed8','—':'var(--txm)'};
 function campActionTag(action){
   var c=CAMP_ACTION_COLOR[action]||'var(--txm)';
   return action==='—'
@@ -2173,14 +2183,14 @@ function renderStatsCrm(){
       mlEl.innerHTML=mailings.map(function(m){
         const total=m.contacts.length;
         const envoye=m.contacts.filter(function(c){return c.statut!=='Non envoyé';}).length;
-        const repondu=m.contacts.filter(function(c){return c.statut==='Répondu';}).length;
+        const rdv=m.contacts.filter(function(c){return c.statut==='RDV planifié'||c.statut==='RDV effectué';}).length;
         const nbPistes=m.contacts.filter(function(c){return c.piste_id;}).length;
         const concluants=m.contacts.filter(function(c){
           if(!c.piste_id)return false;
           return opps.some(function(o){return o.piste_id===c.piste_id&&o.stage==='Concluant';});
         }).length;
         const txEnv=total>0?Math.round(envoye/total*100)+'%':'—';
-        const txRep=total>0?Math.round(repondu/total*100)+'%':'—';
+        const txRdv=total>0?Math.round(rdv/total*100)+'%':'—';
         const txConv=nbPistes>0?Math.round(concluants/nbPistes*100)+'%':'—';
         return '<div class="icard" style="margin-bottom:8px">'
           +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
@@ -2190,8 +2200,8 @@ function renderStatsCrm(){
             +'</div>'
             +'<div style="display:flex;gap:5px;flex-wrap:wrap">'
               +[{l:'Contacts',v:total,c:'var(--txm)'},{l:'Envoyés',v:envoye,c:'#1A7AEA'},
-                {l:'Tx envoi',v:txEnv,c:'#1A7AEA'},{l:'Répondus',v:repondu,c:'#c97a10'},
-                {l:'Tx réponse',v:txRep,c:'#c97a10'},{l:'Pistes',v:nbPistes,c:'#A01864'},
+                {l:'Tx envoi',v:txEnv,c:'#1A7AEA'},{l:'RDV',v:rdv,c:'#1AAE6A'},
+                {l:'Tx RDV',v:txRdv,c:'#1AAE6A'},{l:'Pistes',v:nbPistes,c:'#A01864'},
                 {l:'Concluants',v:concluants,c:'#1AAE6A'},{l:'Tx concluant',v:txConv,c:'#1AAE6A'}]
               .map(function(k){
                 return '<div style="display:flex;flex-direction:column;align-items:center;padding:2px 7px;background:var(--bg);border:0.5px solid var(--bl);border-radius:6px;min-width:52px">'
@@ -2340,8 +2350,8 @@ document.addEventListener('keydown',function(e){
 
 
 // ── MAILING ────────────────────────────────────────────────────────────────
-const MAIL_STATUS=['Non envoyé','Envoyé','Ouvert','Répondu','Sans suite'];
-const MAIL_STATUS_BADGE={'Non envoyé':'b-mailing','Envoyé':'b-envoye','Ouvert':'b-ouvert','Répondu':'b-repondu','Sans suite':'b-sans-rep'};
+const MAIL_STATUS=['Non envoyé','Envoyé','Pas de retour','Indisponible','Pas intéressé','RDV planifié','RDV effectué'];
+const MAIL_STATUS_BADGE={'Non envoyé':'b-mailing','Envoyé':'b-envoye','Pas de retour':'b-pas-retour','Indisponible':'b-indispo-mail','Pas intéressé':'b-pas-int','RDV planifié':'b-rdv-plan','RDV effectué':'b-rdv-ok'};
 let currentMailingId=null, csvParsedData=[], mlCsvParsedData=[];
 
 function renderMailing(){
@@ -2358,10 +2368,10 @@ function renderMailing(){
     if(!m.contacts)m.contacts=[];
     const totalC=m.contacts.length;
     const envoye=m.contacts.filter(function(c){return c.statut!=='Non envoyé';}).length;
-    const repondu=m.contacts.filter(function(c){return c.statut==='Répondu';}).length;
+    const rdv=m.contacts.filter(function(c){return c.statut==='RDV planifié'||c.statut==='RDV effectué';}).length;
     const piste=m.contacts.filter(function(c){return c.piste_id;}).length;
     const txEnv=totalC>0?Math.round(envoye/totalC*100)+'%':'—';
-    const txRep=totalC>0?Math.round(repondu/totalC*100)+'%':'—';
+    const txRdv=totalC>0?Math.round(rdv/totalC*100)+'%':'—';
 
     const card=document.createElement('div');
     card.className='icard';
@@ -2379,8 +2389,8 @@ function renderMailing(){
           +'</div>'
           +'<div style="display:flex;gap:6px;flex-wrap:wrap">'
             +[{l:'Contacts',v:totalC,c:'var(--txm)'},{l:'Envoyés',v:envoye,c:'#1A7AEA'},
-              {l:'Tx envoi',v:txEnv,c:'#1A7AEA'},{l:'Répondus',v:repondu,c:'#1AAE6A'},
-              {l:'Tx réponse',v:txRep,c:'#1AAE6A'},{l:'Pistes',v:piste,c:'var(--ac)'}]
+              {l:'Tx envoi',v:txEnv,c:'#1A7AEA'},{l:'RDV',v:rdv,c:'#1AAE6A'},
+              {l:'Tx RDV',v:txRdv,c:'#1AAE6A'},{l:'Pistes',v:piste,c:'var(--ac)'}]
             .map(function(k){
               return '<div style="display:flex;flex-direction:column;align-items:center;padding:2px 7px;background:var(--bg);border:0.5px solid var(--bl);border-radius:6px;min-width:52px">'
                 +'<div style="font-size:15px;font-weight:600;line-height:1.3;color:'+k.c+'">'+k.v+'</div>'
@@ -2422,10 +2432,13 @@ function renderMailing(){
                 +'<td style="padding:7px 8px;color:var(--tx2)">'+c.societe+'</td>'
                 +'<td style="padding:7px 8px;font-size:11px;color:var(--txm)">'+(c.email||'—')+'</td>'
                 +'<td style="padding:7px 8px" onclick="event.stopPropagation()">'
-                  +'<select style="font-size:11px;padding:3px 6px;border-radius:4px;border:0.5px solid var(--bm);background:var(--bg2);color:var(--tx);cursor:pointer" '
-                    +'data-action="updateMailingStatus" data-mailing-id="'+m.id+'" data-contact-id="'+c.id+'">'
-                    +MAIL_STATUS.map(function(s){return'<option value="'+s+'"'+(c.statut===s?' selected':'')+'>'+s+'</option>';}).join('')
-                  +'</select>'
+                  +'<div style="position:relative;display:inline-block">'
+                    +'<span class="badge '+(MAIL_STATUS_BADGE[c.statut||'Non envoyé']||'b-mailing')+'" style="font-size:11px;padding:2px 8px;pointer-events:none;white-space:nowrap">'+(c.statut||'Non envoyé')+'</span>'
+                    +'<select style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:11px" '
+                      +'data-action="updateMailingStatus" data-mailing-id="'+m.id+'" data-contact-id="'+c.id+'">'
+                      +MAIL_STATUS.map(function(s){return'<option value="'+s+'"'+(c.statut===s?' selected':'')+'>'+s+'</option>';}).join('')
+                    +'</select>'
+                  +'</div>'
                 +'</td>'
                 +'<td style="padding:7px 8px;white-space:nowrap">'+campActionTag(mailAction)+'</td>'
                 +'<td style="padding:7px 8px;text-align:right;white-space:nowrap">'
@@ -2877,7 +2890,8 @@ document.addEventListener('click',function(e){
       <div class="fg"><label class="flabel">Statut</label>
         <select id="emc-statut">
           <option>Non envoyé</option><option>Envoyé</option>
-          <option>Ouvert</option><option>Répondu</option><option>Sans réponse</option>
+          <option>Pas de retour</option><option>Indisponible</option><option>Pas intéressé</option>
+          <option>RDV planifié</option><option>RDV effectué</option>
         </select>
       </div>
     </div>
