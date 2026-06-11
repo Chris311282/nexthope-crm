@@ -2392,18 +2392,31 @@ function renderMailingCommBar(){
     return {name:cm,total:cc.length,actCounts:actCounts,col:CCOLORS[i]||'var(--ac)'};
   }).filter(function(s){return s.total>0;});
   if(stats.length){
-    html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">'
+    html+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">'
       +stats.map(function(s){
         var entries=Object.keys(s.actCounts);
-        return '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 12px;background:var(--bg2);border:0.5px solid var(--bl);border-radius:6px">'
-          +'<span style="font-size:12px;font-weight:700;color:'+s.col+'">'+s.name+'</span>'
-          +'<span style="font-size:11px;color:var(--txm);border-right:1px solid var(--bl);padding-right:8px">'+s.total+' contact'+(s.total>1?'s':'')+'</span>'
+        return '<div style="min-width:210px;flex:1;padding:10px 14px;background:var(--bg2);border:0.5px solid var(--bl);border-radius:8px">'
+          +'<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px;padding-bottom:7px;border-bottom:0.5px solid var(--bl)">'
+            +'<span style="font-size:13px;font-weight:700;color:'+s.col+'">'+s.name+'</span>'
+            +'<span style="font-size:11px;color:var(--txm)">'+s.total+' contact'+(s.total>1?'s':'')+'</span>'
+          +'</div>'
           +(entries.length>0
-            ?entries.map(function(a){
-              var ac=CAMP_ACTION_COLOR[a]||'var(--txm)';
-              return '<span style="font-size:11px;font-weight:600;color:'+ac+'">'+s.actCounts[a]+'×&nbsp;'+a+'</span>';
-            }).join('<span style="color:var(--bl)"> | </span>')
-            :'<span style="font-size:11px;color:var(--txm)">À jour</span>')
+            ?'<div style="display:flex;flex-direction:column;gap:6px">'
+              +entries.map(function(a){
+                var ac=CAMP_ACTION_COLOR[a]||'var(--txm)';
+                var pct=s.total>0?Math.round(s.actCounts[a]/s.total*100):0;
+                return '<div>'
+                  +'<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
+                    +'<span style="font-size:11px;color:'+ac+';font-weight:600">'+a+'</span>'
+                    +'<span style="font-size:11px;font-weight:700;color:'+ac+'">'+s.actCounts[a]+'</span>'
+                  +'</div>'
+                  +'<div style="height:5px;background:var(--bg);border:0.5px solid var(--bl);border-radius:3px;overflow:hidden">'
+                    +'<div style="height:100%;width:'+pct+'%;background:'+ac+';border-radius:3px"></div>'
+                  +'</div>'
+                +'</div>';
+              }).join('')
+            +'</div>'
+            :'<span style="font-size:11px;color:var(--txm)">À jour ✓</span>')
         +'</div>';
       }).join('')
     +'</div>';
