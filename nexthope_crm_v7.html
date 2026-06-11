@@ -2463,7 +2463,7 @@ function renderMailing(){
                 +'<td style="padding:7px 8px;text-align:right;white-space:nowrap">'
                   +(hasPiste
                     ?'<span class="badge b-ouvert" style="font-size:10px">Piste ✓</span>'
-                    :(c.statut==='RDV planifié'
+                    :(c.statut==='RDV effectué'
                       ?'<button class="btn-piste" style="font-size:11px;padding:4px 8px" data-action="mailingToPiste" data-mailing-id="'+m.id+'" data-contact-id="'+c.id+'">Convertir en piste</button>'
                       :'<button disabled style="font-size:11px;padding:4px 8px;opacity:0.35;cursor:not-allowed;border-radius:var(--rm);border:none;background:var(--bg2);color:var(--txm)">Convertir en piste</button>'))
                   +'<button class="abtn" data-action="delMailingContact" data-mailing-id="'+m.id+'" data-contact-id="'+c.id+'" style="padding:2px 4px;margin-left:4px"><i class="ti ti-trash" style="font-size:12px"></i></button>'
