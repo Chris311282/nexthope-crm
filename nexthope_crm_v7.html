@@ -1572,12 +1572,12 @@ function updateEvt(evtName,field,val){
 
 
 
-const EVT_STATUT_BADGE={'Invité':'b-invite','Confirmé':'b-confirme','Présent':'b-present','Absent':'b-absent','Indisponible':'b-indisponible','Pas de retour':'b-pas-retour'};
-const EVT_STATUT_PRE=['Invité','Confirmé','Indisponible','Pas de retour'];
+const EVT_STATUT_BADGE={'À confirmer':'b-invite','Confirmé':'b-confirme','Présent':'b-present','Absent':'b-absent','Indisponible':'b-indisponible','Pas de retour':'b-pas-retour'};
+const EVT_STATUT_PRE=['À confirmer','Confirmé','Indisponible','Pas de retour'];
 const EVT_STATUT_POST=['Présent','Absent'];
 const EVT_STATUT_LIST=[...EVT_STATUT_PRE,...EVT_STATUT_POST];
 const EVT_STATUT_CELL={
-  'Invité':        {bg:'rgba(201,122,16,.14)', color:'#a05a00', border:'rgba(201,122,16,.45)'},
+  'À confirmer':   {bg:'rgba(201,122,16,.14)', color:'#a05a00', border:'rgba(201,122,16,.45)'},
   'Confirmé':      {bg:'rgba(26,122,234,.13)', color:'#0c5294', border:'rgba(26,122,234,.45)'},
   'Présent':       {bg:'rgba(26,174,106,.16)', color:'#0f5c36', border:'rgba(26,174,106,.45)'},
   'Absent':        {bg:'rgba(220,38,38,.13)',  color:'#a32d2d', border:'rgba(220,38,38,.45)'},
@@ -1619,7 +1619,7 @@ function openAddParticipantModal(evtName){
   currentEventName=evtName;
   document.getElementById('ap2-title').textContent='Ajouter un participant — '+evtName;
   ['ap2-nom','ap2-societe','ap2-poste','ap2-email','ap2-tel'].forEach(function(id){document.getElementById(id).value='';});
-  document.getElementById('ap2-statut').value='Invité';
+  document.getElementById('ap2-statut').value='À confirmer';
   document.getElementById('add-participant-modal').style.display='flex';
 }
 
@@ -1652,7 +1652,7 @@ function openEditParticipantModal(pid){
   document.getElementById('ep2-poste').value=p.poste||'';
   document.getElementById('ep2-email').value=p.email||'';
   document.getElementById('ep2-tel').value=p.tel||'';
-  document.getElementById('ep2-statut').value=p.statut||'Invité';
+  document.getElementById('ep2-statut').value=p.statut||'À confirmer';
   document.getElementById('ep2-statut-post').value=p.statutPost||'';
   document.getElementById('ep2-remarques').value=p.remarques||'';
   document.getElementById('edit-participant-modal').setAttribute('data-pid',pid);
@@ -1687,17 +1687,30 @@ function updateEvtPresents(evtName){
 }
 
 // ── CAMPAIGN ACTION HELPERS ────────────────────────────────────────────────
-const EVT_STATUT_ACTION={'Invité':'À relancer','Confirmé':'Rappel J-1','Indisponible':'—','Pas de retour':'À relancer'};
 const EVT_STATUT_POST_CELL={
   'Présent':{bg:'rgba(26,174,106,.16)',color:'#0f5c36'},
   'Absent': {bg:'rgba(220,38,38,.13)', color:'#a32d2d'}
 };
+function getEvtDate(evtnom){
+  var d=evtData[evtnom]&&evtData[evtnom].date;
+  return d?new Date(d+'T00:00:00'):null;
+}
 function getEvtAction(p){
   if(p.statutPost) return '—';
-  return EVT_STATUT_ACTION[p.statut||'Invité']||'—';
+  var statut=p.statut||'À confirmer';
+  if(statut==='Indisponible') return '—';
+  var today=new Date(); today.setHours(0,0,0,0);
+  var evtDate=getEvtDate(p.evtnom);
+  var daysToEvent=evtDate?Math.round((evtDate.getTime()-today.getTime())/86400000):null;
+  if(statut==='Confirmé'){
+    return(daysToEvent!==null&&daysToEvent===1)?'Mail reminder à envoyer':'—';
+  }
+  // À confirmer / Pas de retour → À relancer uniquement si J > 1 avant event
+  if(daysToEvent!==null) return daysToEvent>1?'À relancer':'—';
+  return 'À relancer';
 }
 const MAIL_STATUS_ACTION={'Non envoyé':'À envoyer','Envoyé':'En attente de retour','Pas de retour':'Relancer J+7','Indisponible':'À relancer ultérieurement','Pas intéressé':'Envoi catalogue','RDV planifié':'Entretien à préparer','RDV effectué':'—'};
-const CAMP_ACTION_COLOR={'À relancer':'#c97a10','Rappel J-1':'#1A7AEA','Suivi commercial':'#1AAE6A','À envoyer':'#c97a10','À appeler':'#7A1AEA','Prochain évènement':'#8A5AEA','En attente de retour':'#6b7280','Relancer':'#b45309','Pas de retour':'#92400e','Relancer J+7':'#b45309','À relancer ultérieurement':'#6d28d9','Entretien à préparer':'#1d4ed8','Envoi catalogue':'#0f766e','—':'var(--txm)'};
+const CAMP_ACTION_COLOR={'À relancer':'#c97a10','Rappel J-1':'#1A7AEA','Mail reminder à envoyer':'#1A7AEA','Suivi commercial':'#1AAE6A','À envoyer':'#c97a10','À appeler':'#7A1AEA','Prochain évènement':'#8A5AEA','En attente de retour':'#6b7280','Relancer':'#b45309','Pas de retour':'#92400e','Relancer J+7':'#b45309','À relancer ultérieurement':'#6d28d9','Entretien à préparer':'#1d4ed8','Envoi catalogue':'#0f766e','—':'var(--txm)'};
 function campActionTag(action){
   var c=CAMP_ACTION_COLOR[action]||'var(--txm)';
   return action==='—'
@@ -1772,7 +1785,8 @@ function renderEvents(){
     var _migrated=false;
     evtParticipants.forEach(function(p){
       if(p.statut==='Présent'&&!p.statutPost){p.statut='Confirmé';p.statutPost='Présent';_migrated=true;}
-      else if(p.statut==='Absent'&&!p.statutPost){p.statut='Invité';p.statutPost='Absent';_migrated=true;}
+      else if(p.statut==='Absent'&&!p.statutPost){p.statut='À confirmer';p.statutPost='Absent';_migrated=true;}
+      else if(p.statut==='Invité'){p.statut='À confirmer';_migrated=true;}
     });
     if(_migrated)persist();
     const nbInvites=evtParticipants.length;
@@ -1797,7 +1811,7 @@ function renderEvents(){
         pipeCell='<button class="btn-piste" data-action="convertEnPisteEvent" data-id="'+p.id+'" style="font-size:11px;padding:4px 8px;white-space:nowrap">Convertir en piste</button>';
       }
       const hasPiste=isPiste||inPipe;
-      var pStatut=p.statut||'Invité';
+      var pStatut=p.statut||'À confirmer';
       var pStatutPost=p.statutPost||null;
       var evtAction=getEvtAction(p);
       var sc=EVT_STATUT_CELL[pStatut]||{bg:'var(--bg2)',color:'var(--tx)'};
@@ -3088,7 +3102,7 @@ document.addEventListener('click',function(e){
       <div class="fg"><label class="flabel">Téléphone</label><input id="ap2-tel"></div>
       <div class="fg"><label class="flabel">Statut</label>
         <select id="ap2-statut">
-          <option value="Invité">Invité</option>
+          <option value="À confirmer">À confirmer</option>
           <option value="Confirmé">Confirmé</option>
           <option value="Indisponible">Indisponible</option>
           <option value="Pas de retour">Pas de retour</option>
@@ -3111,7 +3125,7 @@ document.addEventListener('click',function(e){
       <div class="fg"><label class="flabel">Téléphone</label><input id="ep2-tel"></div>
       <div class="fg"><label class="flabel">Statut participation</label>
         <select id="ep2-statut">
-          <option value="Invité">Invité</option>
+          <option value="À confirmer">À confirmer</option>
           <option value="Confirmé">Confirmé</option>
           <option value="Indisponible">Indisponible</option>
           <option value="Pas de retour">Pas de retour</option>
