@@ -1893,9 +1893,9 @@ function renderEvents(){
       // ── DETAIL PANEL (collapsed by default) ─────────────────────────────
       +'<div id="'+sid+'" style="display:none;margin-top:14px;padding-top:14px;border-top:0.5px solid var(--bl)">'
         // Config fields
-        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
-          +'<div class="efield"><label>Date</label><input type="date" value="'+(ed.date||'')+'" data-evt="'+e+'" data-field="date" class="evt-input"></div>'
-          +'<div class="efield"><label>Horaire</label><input type="text" value="'+(ed.heure||'')+'" placeholder="09h00 – 17h00" data-evt="'+e+'" data-field="heure" class="evt-input"></div>'
+        +'<div style="display:grid;grid-template-columns:auto auto 1fr;gap:8px;margin-bottom:8px">'
+          +'<div class="efield"><label>Date</label><input type="date" value="'+(ed.date||'')+'" data-evt="'+e+'" data-field="date" class="evt-input" style="width:130px"></div>'
+          +'<div class="efield"><label>Horaire</label><input type="text" value="'+(ed.heure||'')+'" placeholder="09h00 – 17h00" data-evt="'+e+'" data-field="heure" class="evt-input" style="width:120px"></div>'
           +'<div class="efield"><label>Lieu / Venue</label><input type="text" value="'+(ed.lieu||'')+'" placeholder="Hôtel, salle…" data-evt="'+e+'" data-field="lieu" class="evt-input"></div>'
         +'</div>'
         +'<div class="evt-fields" style="margin-bottom:14px">'
