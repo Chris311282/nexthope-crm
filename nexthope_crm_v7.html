@@ -1862,7 +1862,9 @@ function renderEvents(){
         +'<td style="padding:7px 8px;text-align:right">'
           +(hasPiste
             ?'<span class="badge b-piste" style="font-size:10px">Piste ✓</span>'
-            :'<button class="btn-piste" style="font-size:11px;padding:4px 8px;white-space:nowrap" data-action="convertEnPisteEvent" data-id="'+p.id+'">Convertir en piste</button>')
+            :(pStatutPost==='Présent'
+              ?'<button class="btn-piste" style="font-size:11px;padding:4px 8px;white-space:nowrap" data-action="convertEnPisteEvent" data-id="'+p.id+'">Convertir en piste</button>'
+              :'<button disabled style="font-size:11px;padding:4px 8px;white-space:nowrap;opacity:0.38;cursor:not-allowed;background:var(--bg2);color:var(--txm);border:0.5px solid var(--bl);border-radius:6px">Convertir en piste</button>'))
         +'</td>'
         +'</tr>';
     }).join('');
