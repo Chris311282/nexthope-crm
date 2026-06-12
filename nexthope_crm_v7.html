@@ -1583,7 +1583,7 @@ function evtStatutOptions(sel){
 let currentEventName=null;
 
 function openAddEventModal(){
-  ['ae-nom','ae-lieu','ae-goodies'].forEach(function(id){document.getElementById(id).value='';});
+  ['ae-nom','ae-lieu','ae-heure','ae-goodies'].forEach(function(id){document.getElementById(id).value='';});
   ['ae-date','ae-invites','ae-cout'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('add-event-modal').style.display='flex';
 }
@@ -1594,6 +1594,7 @@ function saveAddEvent(){
   if(evtData[nom]){alert('Un événement avec ce nom existe déjà.');return;}
   evtData[nom]={
     date:document.getElementById('ae-date').value,
+    heure:document.getElementById('ae-heure').value.trim(),
     lieu:document.getElementById('ae-lieu').value.trim(),
     invites:parseInt(document.getElementById('ae-invites').value)||0,
     cout:parseInt(document.getElementById('ae-cout').value)||0,
@@ -1871,6 +1872,7 @@ function renderEvents(){
           // Summary tags row
           +'<div style="font-size:11px;color:var(--tx2);margin-bottom:6px">'
             +(ed.date?'<span style="margin-right:10px"><i class="ti ti-calendar" style="font-size:10px;margin-right:3px"></i>'+dateStr+'</span>':'')
+            +(ed.heure?'<span style="margin-right:10px"><i class="ti ti-clock" style="font-size:10px;margin-right:3px"></i>'+ed.heure+'</span>':'')
             +(ed.lieu?'<span><i class="ti ti-map-pin" style="font-size:10px;margin-right:3px"></i>'+ed.lieu+'</span>':'')
           +'</div>'
           +'<div style="display:flex;gap:5px;flex-wrap:wrap">'
@@ -1893,6 +1895,7 @@ function renderEvents(){
         // Config fields
         +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
           +'<div class="efield"><label>Date</label><input type="date" value="'+(ed.date||'')+'" data-evt="'+e+'" data-field="date" class="evt-input"></div>'
+          +'<div class="efield"><label>Horaire</label><input type="text" value="'+(ed.heure||'')+'" placeholder="09h00 – 17h00" data-evt="'+e+'" data-field="heure" class="evt-input"></div>'
           +'<div class="efield"><label>Lieu / Venue</label><input type="text" value="'+(ed.lieu||'')+'" placeholder="Hôtel, salle…" data-evt="'+e+'" data-field="lieu" class="evt-input"></div>'
         +'</div>'
         +'<div class="evt-fields" style="margin-bottom:14px">'
@@ -3078,6 +3081,7 @@ document.addEventListener('click',function(e){
     <div class="fgrid">
       <div class="fg full"><label class="flabel">Nom de l'événement *</label><input id="ae-nom" placeholder="Ex: Cisco Partner Summit 2026"></div>
       <div class="fg"><label class="flabel">Date</label><input id="ae-date" type="date"></div>
+      <div class="fg"><label class="flabel">Horaire</label><input id="ae-heure" placeholder="09h00 – 17h00"></div>
       <div class="fg"><label class="flabel">Lieu / Venue</label><input id="ae-lieu" placeholder="Hôtel Colbert, Antananarivo"></div>
       <div class="fg"><label class="flabel">Invités envoyés</label><input id="ae-invites" type="number" min="0" placeholder="0"></div>
       <div class="fg"><label class="flabel">Coût (Ar)</label><input id="ae-cout" type="number" min="0" placeholder="0"></div>
