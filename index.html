@@ -93,7 +93,7 @@ tr:hover td{background:var(--bg2)}
 .evt-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 .efield{display:flex;flex-direction:column;gap:4px}
 .efield label{font-size:11px;color:var(--tx2);font-weight:500;text-transform:uppercase;letter-spacing:.04em}
-.efield input{font-size:13px;padding:7px 8px;border-radius:var(--rm);border:0.5px solid var(--bm);background:var(--bg);color:var(--tx);outline:none;width:100%}
+.efield input{font-size:13px;padding:7px 8px;border-radius:var(--rm);border:0.5px solid var(--bm);background:var(--bg);color:var(--tx);outline:none;width:100%;font-family:var(--fn)}
 .efield input:focus{border-color:var(--ac)}
 .mini-kpi{background:var(--bg);border:0.5px solid var(--bl);border-radius:var(--rm);padding:7px 10px;text-align:center;min-width:70px}
 .mini-kpi-l{font-size:10px;color:var(--tx2);margin-bottom:3px}
@@ -1554,7 +1554,7 @@ function toggleEvtDetail(sid){
 }
 function updateEvt(evtName,field,val){
   if(!evtData[evtName])evtData[evtName]={invites:0,presents:0,cout:0,date:'',lieu:'',goodies:''};
-  evtData[evtName][field]=['invites','presents','cout'].includes(field)?parseInt(val)||0:val;
+  evtData[evtName][field]=['invites','presents','cout'].includes(field)?parseInt((val||'').replace(/[\s ]/g,''))||0:val;
   persist();if(curTab==='stats-events')renderStatsEvents();if(curTab==='stats-crm')renderStatsCrm();
 }
 
@@ -1898,7 +1898,7 @@ function renderEvents(){
           +'<div class="efield"><label>Horaire</label><input type="text" value="'+(ed.heure||'')+'" placeholder="09h00–17h00" data-evt="'+e+'" data-field="heure" class="evt-input" style="width:110px"></div>'
           +'<div class="efield"><label>Lieu</label><input type="text" value="'+(ed.lieu||'')+'" placeholder="Hôtel, salle…" data-evt="'+e+'" data-field="lieu" class="evt-input" style="width:150px"></div>'
           +'<div class="efield"><label>Goodies</label><input type="text" value="'+(ed.goodies||'')+'" placeholder="T-shirt…" data-evt="'+e+'" data-field="goodies" class="evt-input" style="width:110px"></div>'
-          +'<div class="efield"><label>Coût (Ar)</label><input type="number" min="0" value="'+(ed.cout||'')+'" placeholder="0" data-evt="'+e+'" data-field="cout" class="evt-input" style="width:90px"></div>'
+          +'<div class="efield"><label>Coût (Ar)</label><input type="text" inputmode="numeric" value="'+(ed.cout>0?parseInt(ed.cout).toLocaleString('fr-FR'):'')+'" placeholder="0" data-evt="'+e+'" data-field="cout" class="evt-input" style="width:100px;text-align:right"></div>'
         +'</div>'
         // Participants table
         +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">'
