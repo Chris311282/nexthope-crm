@@ -1609,6 +1609,7 @@ function openAddParticipantModal(evtName){
   document.getElementById('ap2-title').textContent='Ajouter un participant — '+evtName;
   ['ap2-nom','ap2-societe','ap2-poste','ap2-email','ap2-tel'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('ap2-statut').value='À confirmer';
+  document.getElementById('ap2-assigne').value='';
   document.getElementById('add-participant-modal').style.display='flex';
 }
 
@@ -1625,6 +1626,7 @@ function saveAddParticipant(){
     evtnom:currentEventName,
     evtdate:evtData[currentEventName]&&evtData[currentEventName].date||'',
     statut:document.getElementById('ap2-statut').value,
+    assigne:document.getElementById('ap2-assigne').value||null,
     piste_ids:[]
   };
   participants.push(p);
@@ -1641,6 +1643,7 @@ function openEditParticipantModal(pid){
   document.getElementById('ep2-poste').value=p.poste||'';
   document.getElementById('ep2-email').value=p.email||'';
   document.getElementById('ep2-tel').value=p.tel||'';
+  document.getElementById('ep2-assigne').value=p.assigne||'';
   document.getElementById('ep2-statut').value=p.statut||'À confirmer';
   document.getElementById('ep2-statut-post').value=p.statutPost||'';
   _updateEp2PostLock();
@@ -1671,6 +1674,7 @@ function saveEditParticipant(){
   p.poste=document.getElementById('ep2-poste').value.trim();
   p.email=document.getElementById('ep2-email').value.trim();
   p.tel=document.getElementById('ep2-tel').value.trim();
+  p.assigne=document.getElementById('ep2-assigne').value||null;
   p.statut=document.getElementById('ep2-statut').value;
   p.statutPost=document.getElementById('ep2-statut-post').value||null;
   p.remarques=document.getElementById('ep2-remarques').value.trim();
@@ -1809,6 +1813,7 @@ function renderEvents(){
         +'<td style="padding:7px 8px;font-size:12px;font-weight:500">'+p.nom+'</td>'
         +'<td style="padding:7px 8px;font-size:12px;color:var(--tx2)">'+p.societe+'</td>'
         +'<td style="padding:7px 8px;font-size:11px;color:var(--txm)">'+(p.email||'—')+'</td>'
+        +'<td style="padding:7px 8px;font-size:11px;font-weight:600;color:'+(CCOLORS[COMMS.indexOf(p.assigne)]||'var(--txm)')+'">'+(p.assigne||'<span style="opacity:0.35;font-weight:400">—</span>')+'</td>'
         // Statut avant évènement
         +'<td style="padding:7px 8px" onclick="event.stopPropagation()">'
           +'<div style="position:relative;display:inline-block">'
@@ -1910,11 +1915,13 @@ function renderEvents(){
           +'<span style="font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.04em;margin-right:4px">Actions :</span>'
           +campActionRecap(evtParticipants,getEvtAction)
         +'</div>'
+        +commStatsHTML(evtParticipants,getEvtAction,'participant')
         +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">'
           +'<thead><tr>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Nom</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Société</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Email</th>'
+            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Assigné</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Avant évt</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Après évt</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Action</th>'
@@ -2426,11 +2433,13 @@ const MAIL_STATUS_BADGE={'Non envoyé':'b-mailing','Envoyé':'b-envoye','Pas de 
 let currentMailingId=null, csvParsedData=[], mlCsvParsedData=[];
 var mlComm='';
 function setMailComm(c){mlComm=c;renderMailing();}
-function commStatsHTML(contacts){
+function commStatsHTML(items, actionFn, itemLabel){
+  actionFn=actionFn||getMailAction;
+  itemLabel=itemLabel||'contact';
   var stats=COMMS.map(function(cm,i){
-    var cc=contacts.filter(function(c){return c.assigne===cm;});
+    var cc=items.filter(function(c){return c.assigne===cm;});
     var actCounts={};
-    cc.forEach(function(c){var a=getMailAction(c);if(a!=='—')actCounts[a]=(actCounts[a]||0)+1;});
+    cc.forEach(function(c){var a=actionFn(c);if(a!=='—')actCounts[a]=(actCounts[a]||0)+1;});
     return{name:cm,total:cc.length,actCounts:actCounts,col:CCOLORS[i]||'var(--ac)'};
   }).filter(function(s){return s.total>0;});
   if(!stats.length)return'';
@@ -2440,7 +2449,7 @@ function commStatsHTML(contacts){
       return'<div style="min-width:170px;padding:8px 12px;background:var(--bg);border:0.5px solid var(--bl);border-radius:7px">'
         +'<div style="display:flex;align-items:baseline;gap:7px;margin-bottom:7px;padding-bottom:6px;border-bottom:0.5px solid var(--bl)">'
           +'<span style="font-size:12px;font-weight:700;color:'+s.col+'">'+s.name+'</span>'
-          +'<span style="font-size:11px;color:var(--txm)">'+s.total+' contact'+(s.total>1?'s':'')+'</span>'
+          +'<span style="font-size:11px;color:var(--txm)">'+s.total+' '+itemLabel+(s.total>1?'s':'')+'</span>'
         +'</div>'
         +(entries.length>0
           ?'<div style="display:flex;flex-direction:column;gap:5px">'
@@ -3105,6 +3114,14 @@ document.addEventListener('click',function(e){
           <option value="Pas de retour">Pas de retour</option>
         </select>
       </div>
+      <div class="fg"><label class="flabel">Assigné</label>
+        <select id="ap2-assigne">
+          <option value="">— Non assigné —</option>
+          <option value="Nickie">Nickie</option>
+          <option value="Tsilavo">Tsilavo</option>
+          <option value="Fabio">Fabio</option>
+        </select>
+      </div>
     </div>
     <div class="fact"><button class="bcancel" onclick="closeModals()">Annuler</button><button class="bsave" onclick="saveAddParticipant()">Ajouter</button></div>
   </div>
@@ -3120,6 +3137,14 @@ document.addEventListener('click',function(e){
       <div class="fg"><label class="flabel">Poste</label><input id="ep2-poste"></div>
       <div class="fg"><label class="flabel">Email</label><input id="ep2-email" type="email"></div>
       <div class="fg"><label class="flabel">Téléphone</label><input id="ep2-tel"></div>
+      <div class="fg"><label class="flabel">Assigné</label>
+        <select id="ep2-assigne">
+          <option value="">— Non assigné —</option>
+          <option value="Nickie">Nickie</option>
+          <option value="Tsilavo">Tsilavo</option>
+          <option value="Fabio">Fabio</option>
+        </select>
+      </div>
       <div class="fg"><label class="flabel">Statut participation</label>
         <select id="ep2-statut" onchange="_updateEp2PostLock()">
           <option value="À confirmer">À confirmer</option>
