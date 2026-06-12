@@ -1654,11 +1654,21 @@ function openEditParticipantModal(pid){
   document.getElementById('ep2-tel').value=p.tel||'';
   document.getElementById('ep2-statut').value=p.statut||'À confirmer';
   document.getElementById('ep2-statut-post').value=p.statutPost||'';
+  _updateEp2PostLock();
   document.getElementById('ep2-remarques').value=p.remarques||'';
   document.getElementById('edit-participant-modal').setAttribute('data-pid',pid);
   document.getElementById('edit-participant-modal').style.display='flex';
 }
 
+function _updateEp2PostLock(){
+  var isConfirme=document.getElementById('ep2-statut').value==='Confirmé';
+  var sel=document.getElementById('ep2-statut-post');
+  var wrap=document.getElementById('ep2-statut-post-wrap');
+  sel.disabled=!isConfirme;
+  wrap.style.opacity=isConfirme?'1':'0.38';
+  wrap.style.cursor=isConfirme?'':'not-allowed';
+  if(!isConfirme){sel.value='';}
+}
 function saveEditParticipant(){
   const modal=document.getElementById('edit-participant-modal');
   const pid=modal.getAttribute('data-pid');
@@ -1829,18 +1839,25 @@ function renderEvents(){
             +'</select>'
           +'</div>'
         +'</td>'
-        // Statut après évènement
-        +'<td style="padding:7px 8px" onclick="event.stopPropagation()">'
-          +'<div style="position:relative;display:inline-block">'
-            +(sp
-              ?'<span style="display:inline-block;font-size:11px;padding:2px 8px;border-radius:5px;background:'+sp.bg+';color:'+sp.color+';font-weight:500;white-space:nowrap;pointer-events:none">'+pStatutPost+'</span>'
-              :'<span style="display:inline-block;font-size:11px;padding:2px 8px;border-radius:5px;background:var(--bg2);color:var(--txm);font-weight:400;white-space:nowrap;pointer-events:none">—</span>')
-            +'<select style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:11px" data-action="updateParticipantStatutPost" data-pid="'+p.id+'">'
-              +'<option value=""'+(pStatutPost?'':' selected')+'>—</option>'
-              +EVT_STATUT_POST.map(function(s){return'<option value="'+s+'"'+(pStatutPost===s?' selected':'')+'>'+s+'</option>';}).join('')
-            +'</select>'
-          +'</div>'
-        +'</td>'
+        // Statut après évènement (actif seulement si Confirmé)
+        +(function(){
+          var postEnabled=(pStatut==='Confirmé');
+          var cellStyle='padding:7px 8px'+(postEnabled?'':';opacity:0.38;cursor:not-allowed');
+          var spanStyle='display:inline-block;font-size:11px;padding:2px 8px;border-radius:5px;font-weight:'+(sp?'500':'400')+';white-space:nowrap;pointer-events:none;'
+            +(sp?'background:'+sp.bg+';color:'+sp.color:'background:var(--bg2);color:var(--txm)');
+          var label=pStatutPost||'—';
+          return '<td style="'+cellStyle+'" onclick="event.stopPropagation()">'
+            +'<div style="position:relative;display:inline-block">'
+              +'<span style="'+spanStyle+'">'+label+'</span>'
+              +(postEnabled
+                ?'<select style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:11px" data-action="updateParticipantStatutPost" data-pid="'+p.id+'">'
+                  +'<option value=""'+(pStatutPost?'':' selected')+'>—</option>'
+                  +EVT_STATUT_POST.map(function(s){return'<option value="'+s+'"'+(pStatutPost===s?' selected':'')+'>'+s+'</option>';}).join('')
+                +'</select>'
+                :'')
+            +'</div>'
+          +'</td>';
+        })()
         +'<td style="padding:7px 8px;white-space:nowrap">'+campActionTag(evtAction)+'</td>'
         +'<td style="padding:7px 8px;text-align:right">'
           +(hasPiste
@@ -3124,14 +3141,14 @@ document.addEventListener('click',function(e){
       <div class="fg"><label class="flabel">Email</label><input id="ep2-email" type="email"></div>
       <div class="fg"><label class="flabel">Téléphone</label><input id="ep2-tel"></div>
       <div class="fg"><label class="flabel">Statut participation</label>
-        <select id="ep2-statut">
+        <select id="ep2-statut" onchange="_updateEp2PostLock()">
           <option value="À confirmer">À confirmer</option>
           <option value="Confirmé">Confirmé</option>
           <option value="Indisponible">Indisponible</option>
           <option value="Pas de retour">Pas de retour</option>
         </select>
       </div>
-      <div class="fg"><label class="flabel">Statut après évènement</label>
+      <div class="fg" id="ep2-statut-post-wrap"><label class="flabel">Statut après évènement</label>
         <select id="ep2-statut-post">
           <option value="">— Non renseigné —</option>
           <option value="Présent">Présent</option>
