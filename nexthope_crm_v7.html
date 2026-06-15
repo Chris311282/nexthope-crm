@@ -1783,7 +1783,10 @@ function _restoreOpen(o){
 
 function renderEvents(){
   var openEvt=_saveOpen('evcard_');
-  const evts=getEvtNames();
+  const evts=[...new Set([
+    ...Object.keys(evtData).filter(function(k){return!k.startsWith('Mailing');}),
+    ...getEvtNames()
+  ])];
   const el=document.getElementById('events-list');
   const emEl=document.getElementById('events-empty');
   if(!el)return;
