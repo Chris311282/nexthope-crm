@@ -1911,13 +1911,16 @@ function renderEvents(){
           var spanStyle='display:inline-block;font-size:11px;padding:2px 4px;white-space:nowrap;pointer-events:none;'
             +(rdvDate?'color:var(--tx);font-weight:500':'color:var(--txm);font-weight:400');
           var cellStyle='padding:6px 8px'+(dateEnabled?'':';opacity:0.38;cursor:not-allowed');
-          return '<td style="'+cellStyle+'" onclick="event.stopPropagation()">'
+          var tdClick=dateEnabled
+            ?'event.stopPropagation();var i=this.querySelector(\'input[type=date]\');if(i){try{i.showPicker();}catch(e){i.focus();}}'
+            :'event.stopPropagation()';
+          return '<td style="'+cellStyle+'" onclick="'+tdClick+'">'
             +'<div style="position:relative;display:inline-block">'
               +'<span style="'+spanStyle+'">'+displayDate+'</span>'
               +(dateEnabled
                 ?'<input type="date" value="'+rdvDate+'" data-pid="'+p.id+'"'
                   +' onchange="setParticipantRdvDate(this)"'
-                  +' style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer">'
+                  +' style="position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:none">'
                 :'')
             +'</div>'
           +'</td>';
