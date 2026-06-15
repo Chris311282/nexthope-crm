@@ -1845,15 +1845,13 @@ function renderEvents(){
 
     const evtParticipants=participants.filter(function(p){return p.evtnom===e;});
     // Migration: statut split + piste_id → piste_ids
-    var _migrated=false;
     evtParticipants.forEach(function(p){
-      if(p.statut==='Présent'&&!p.statutPost){p.statut='Confirmé';p.statutPost='Présent';_migrated=true;}
-      else if(p.statut==='Absent'&&!p.statutPost){p.statut='À confirmer';p.statutPost='Absent';_migrated=true;}
-      else if(p.statut==='Invité'){p.statut='À confirmer';_migrated=true;}
-      if(p.piste_id&&!p.piste_ids){p.piste_ids=[p.piste_id];delete p.piste_id;delete p.converted;_migrated=true;}
-      else if(!p.piste_ids){p.piste_ids=[];_migrated=true;}
+      if(p.statut==='Présent'&&!p.statutPost){p.statut='Confirmé';p.statutPost='Présent';}
+      else if(p.statut==='Absent'&&!p.statutPost){p.statut='À confirmer';p.statutPost='Absent';}
+      else if(p.statut==='Invité'){p.statut='À confirmer';}
+      if(p.piste_id&&!p.piste_ids){p.piste_ids=[p.piste_id];delete p.piste_id;delete p.converted;}
+      else if(!p.piste_ids){p.piste_ids=[];}
     });
-    if(_migrated)persist();
     const nbInvites=evtParticipants.length;
     const nbConfirmes=evtParticipants.filter(function(p){return p.statut==='Confirmé';}).length;
     const nbPresents=evtParticipants.filter(function(p){return p.statutPost==='Présent';}).length;
@@ -2642,13 +2640,10 @@ function renderMailing(){
     const totalC=displayC.length;
     const envoye=displayC.filter(function(c){return c.statut!=='Non envoyé';}).length;
     const rdv=displayC.filter(function(c){return c.statut==='RDV planifié'||c.statut==='RDV effectué';}).length;
-    // Migration: piste_id → piste_ids for mailing contacts
-    var _mlMigrated=false;
     m.contacts.forEach(function(c){
-      if(c.piste_id&&!c.piste_ids){c.piste_ids=[c.piste_id];delete c.piste_id;_mlMigrated=true;}
-      else if(!c.piste_ids){c.piste_ids=[];_mlMigrated=true;}
+      if(c.piste_id&&!c.piste_ids){c.piste_ids=[c.piste_id];delete c.piste_id;}
+      else if(!c.piste_ids){c.piste_ids=[];}
     });
-    if(_mlMigrated)persist();
     const piste=displayC.reduce(function(s,c){return s+(c.piste_ids?c.piste_ids.length:0);},0);
     const txEnv=totalC>0?Math.round(envoye/totalC*100)+'%':'—';
     const txRdv=totalC>0?Math.round(rdv/totalC*100)+'%':'—';
