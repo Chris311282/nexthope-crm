@@ -1207,10 +1207,12 @@ function delParticipant(id){
   if(evtnom)updateEvtPresents(evtnom);
   persist();renderEvents();
 }
+var _deletedEvts=new Set();
 function delEvent(evtnom){
   var nb=participants.filter(function(p){return p.evtnom===evtnom;}).length;
   var msg='Supprimer l\'événement "'+evtnom+'"'+(nb>0?' et ses '+nb+' participant(s) ?':' ?');
   if(!confirm(msg))return;
+  _deletedEvts.add(evtnom);
   participants=participants.filter(function(p){return p.evtnom!==evtnom;});
   delete evtData[evtnom];
   persist();renderEvents();renderDash();
@@ -1817,8 +1819,8 @@ function _restoreOpen(o){
 function renderEvents(){
   var openEvt=_saveOpen('evcard_');
   const evts=[...new Set([
-    ...Object.keys(evtData).filter(function(k){return!k.startsWith('Mailing');}),
-    ...getEvtNames()
+    ...Object.keys(evtData).filter(function(k){return!k.startsWith('Mailing')&&!_deletedEvts.has(k);}),
+    ...getEvtNames().filter(function(k){return!_deletedEvts.has(k);})
   ])];
   const el=document.getElementById('events-list');
   const emEl=document.getElementById('events-empty');
