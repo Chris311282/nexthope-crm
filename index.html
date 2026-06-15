@@ -2461,7 +2461,7 @@ document.addEventListener('change',function(e){
     const p=participants.find(function(x){return x.id===pid;});
     if(p){
       p.statut=e.target.value;
-      if(p.statut==='Indisponible'||p.statut==='Pas de retour'){
+      if(p.statut==='À confirmer'||p.statut==='Indisponible'||p.statut==='Pas de retour'){
         p.statutPost=null;p.statutApres=null;p.rdvDate=null;
       }
       updateEvtPresents(p.evtnom);persist();renderEvents();
