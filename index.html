@@ -1716,8 +1716,8 @@ function getEvtDate(evtnom){
 function getEvtAction(p){
   // Après evt renseigné → rien à faire
   if(p.statutApres) return '—';
-  // Pendant evt : présent mais pas encore de RDV
-  if(p.statutPost==='Présent') return 'RDV à planifier';
+  // Pendant evt : présent (RDV géré manuellement dans Après évt)
+  if(p.statutPost==='Présent') return '—';
   // Absent → rien à faire
   if(p.statutPost==='Absent') return '—';
   // Avant evt
