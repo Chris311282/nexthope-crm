@@ -1821,7 +1821,14 @@ function renderEvents(){
   const evts=[...new Set([
     ...Object.keys(evtData).filter(function(k){return!k.startsWith('Mailing')&&!_deletedEvts.has(k);}),
     ...getEvtNames().filter(function(k){return!_deletedEvts.has(k);})
-  ])];
+  ])].sort(function(a,b){
+    var da=(evtData[a]&&evtData[a].date)||'';
+    var db2=(evtData[b]&&evtData[b].date)||'';
+    if(!da&&!db2)return 0;
+    if(!da)return 1;
+    if(!db2)return -1;
+    return db2>da?1:db2<da?-1:0;
+  });
   const el=document.getElementById('events-list');
   const emEl=document.getElementById('events-empty');
   if(!el)return;
