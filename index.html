@@ -1748,24 +1748,27 @@ function getEvtDate(evtnom){
   return d?new Date(d+'T00:00:00'):null;
 }
 function getEvtAction(p){
-  if(p.statutApres==='RDV planifié') return 'RDV à préparer';
-  if(p.statutApres==='RDV effectué') return '—';
-  // Pendant evt : présent (RDV géré manuellement dans Après évt)
-  if(p.statutPost==='Présent') return '—';
-  // Absent → rien à faire
-  if(p.statutPost==='Absent') return '—';
-  // Avant evt
-  var statut=p.statut||'À confirmer';
-  if(statut==='Indisponible') return '';
-  var today=new Date(); today.setHours(0,0,0,0);
-  var evtDate=getEvtDate(p.evtnom);
-  var daysToEvent=evtDate?Math.round((evtDate.getTime()-today.getTime())/86400000):null;
-  if(statut==='Confirmé'){
-    return(daysToEvent!==null&&daysToEvent===1)?'Mail reminder à envoyer':'—';
+  var action;
+  if(p.statutApres==='RDV planifié'){action='RDV à préparer';}
+  else if(p.statutApres==='RDV effectué'){action='—';}
+  else if(p.statutPost==='Présent'){action='—';}
+  else if(p.statutPost==='Absent'){action='—';}
+  else{
+    var statut=p.statut||'À confirmer';
+    if(statut==='Indisponible'){action='';}
+    else{
+      var today=new Date(); today.setHours(0,0,0,0);
+      var evtDate=getEvtDate(p.evtnom);
+      var daysToEvent=evtDate?Math.round((evtDate.getTime()-today.getTime())/86400000):null;
+      if(statut==='Confirmé'){
+        action=(daysToEvent!==null&&daysToEvent===1)?'Mail reminder à envoyer':'—';
+      }else{
+        action=(daysToEvent!==null)?daysToEvent>1?'À relancer':'—':'À relancer';
+      }
+    }
   }
-  // À confirmer / Pas de retour → À relancer uniquement si J > 1 avant event
-  if(daysToEvent!==null) return daysToEvent>1?'À relancer':'—';
-  return 'À relancer';
+  if(action&&action!=='—'&&action===p.actionValidated)return'—';
+  return action;
 }
 const MAIL_STATUS_ACTION={'Non envoyé':'À envoyer','Envoyé':'En attente de retour','Pas de retour':'Relancer J+7','Indisponible':'À relancer ultérieurement','Pas intéressé':'Envoi brochure','RDV planifié':'Entretien à préparer','RDV effectué':'—'};
 const CAMP_ACTION_COLOR={'À relancer':'#c97a10','Rappel J-1':'#1A7AEA','Mail reminder à envoyer':'#1A7AEA','RDV à planifier':'#7A1AEA','RDV à préparer':'#1d4ed8','Suivi commercial':'#1AAE6A','À envoyer':'#c97a10','À appeler':'#7A1AEA','Prochain évènement':'#8A5AEA','En attente de retour':'#6b7280','Relancer':'#b45309','Pas de retour':'#92400e','Relancer J+7':'#b45309','À relancer ultérieurement':'#6d28d9','Entretien à préparer':'#1d4ed8','Envoi brochure':'#0f766e','—':'var(--txm)'};
@@ -1778,14 +1781,18 @@ function campActionTag(action){
 }
 function getMailAction(c){
   var statut=c.statut||'Non envoyé';
+  var action;
   if(statut==='Envoyé'){
-    if(!c.dateEnvoi)return'En attente de retour';
-    var days=Math.floor((Date.now()-new Date(c.dateEnvoi+'T00:00:00').getTime())/86400000);
-    if(days>=5)return'Pas de retour';
-    if(days>=2)return'Relancer';
-    return'En attente de retour';
-  }
-  return MAIL_STATUS_ACTION[statut]||'—';
+    if(!c.dateEnvoi){action='En attente de retour';}
+    else{
+      var days=Math.floor((Date.now()-new Date(c.dateEnvoi+'T00:00:00').getTime())/86400000);
+      if(days>=5)action='Pas de retour';
+      else if(days>=2)action='Relancer';
+      else action='En attente de retour';
+    }
+  }else{action=MAIL_STATUS_ACTION[statut]||'—';}
+  if(action&&action!=='—'&&action===c.actionValidated)return'—';
+  return action;
 }
 function campActionRecap(items,actionMapOrFn){
   var getA=typeof actionMapOrFn==='function'?actionMapOrFn:function(it){return actionMapOrFn[it.statut]||'—';};
@@ -1927,7 +1934,14 @@ function renderEvents(){
             +'</div>'
           +'</td>';
         })()
-        +'<td style="padding:7px 8px;white-space:nowrap">'+campActionTag(evtAction)+'</td>'
+        +'<td style="padding:5px 8px;white-space:nowrap" onclick="event.stopPropagation()">'
+          +'<div style="display:flex;align-items:center;gap:3px">'
+            +campActionTag(evtAction)
+            +(evtAction&&evtAction!=='—'
+              ?'<button class="abtn" data-action="validateEvtAction" data-id="'+p.id+'" title="Marquer comme fait" style="padding:1px 3px;opacity:0.55"><i class="ti ti-circle-check" style="font-size:13px;pointer-events:none"></i></button>'
+              :'')
+          +'</div>'
+        +'</td>'
         // Date RDV — même pattern span+select invisible que les statuts
         +(function(){
           var dateEnabled=!!pStatutApres;
@@ -2468,6 +2482,17 @@ document.addEventListener('click',function(e){
   else if(act==='convertEnPisteEvent'){e.stopPropagation();convertEnPiste('event', id);}
   else if(act==='addMailingContact'){e.stopPropagation();openAddMailingContactModal(id);}
   else if(act==='importEvtCSV'){e.stopPropagation();openImportEvtCSV(id);}
+  else if(act==='validateEvtAction'){e.stopPropagation();
+    var _p=participants.find(function(x){return x.id===id;});
+    if(_p){_p.actionValidated=getEvtAction(_p);persist();renderEvents();}
+  }
+  else if(act==='validateMailingAction'){e.stopPropagation();
+    var _mid=btn.getAttribute('data-mid'),_cid=btn.getAttribute('data-cid');
+    var _m=mailings.find(function(x){return x.id===_mid;});
+    if(_m){var _c=_m.contacts.find(function(x){return x.id===_cid;});
+      if(_c){_c.actionValidated=getMailAction(_c);persist();renderMailing();}
+    }
+  }
   else if(act==='importMailingCSV'){e.stopPropagation();openImportMailingCSV(id);}
   else if(act==='delMailing'){e.stopPropagation();delMailing(id);}
   else if(act==='editMailingContact'){
@@ -2498,7 +2523,7 @@ document.addEventListener('change',function(e){
     const pid=e.target.getAttribute('data-pid');
     const p=participants.find(function(x){return x.id===pid;});
     if(p){
-      p.statut=e.target.value;
+      p.statut=e.target.value;p.actionValidated=null;
       if(p.statut==='À confirmer'||p.statut==='Indisponible'||p.statut==='Pas de retour'){
         p.statutPost=null;p.statutApres=null;p.rdvDate=null;
       }
@@ -2509,8 +2534,8 @@ document.addEventListener('change',function(e){
     const pid=e.target.getAttribute('data-pid');
     const p=participants.find(function(x){return x.id===pid;});
     if(p){
-      p.statutPost=e.target.value||null;
-      if(!p.statutPost)p.statutApres=null; // reset après evt si pdt evt vidé
+      p.statutPost=e.target.value||null;p.actionValidated=null;
+      if(!p.statutPost)p.statutApres=null;
       updateEvtPresents(p.evtnom);persist();renderEvents();
     }
   }
@@ -2518,7 +2543,7 @@ document.addEventListener('change',function(e){
     const pid=e.target.getAttribute('data-pid');
     const p=participants.find(function(x){return x.id===pid;});
     if(p){
-      p.statutApres=e.target.value||null;
+      p.statutApres=e.target.value||null;p.actionValidated=null;
       if(!p.statutApres)p.rdvDate=null;
       persist();renderEvents();
     }
@@ -2732,7 +2757,14 @@ function renderMailing(){
                     +'</select>'
                   +'</div>'
                 +'</td>'
-                +'<td style="padding:7px 8px;white-space:nowrap">'+campActionTag(mailAction)+'</td>'
+                +'<td style="padding:5px 8px;white-space:nowrap" onclick="event.stopPropagation()">'
+                  +'<div style="display:flex;align-items:center;gap:3px">'
+                    +campActionTag(mailAction)
+                    +(mailAction&&mailAction!=='—'
+                      ?'<button class="abtn" data-action="validateMailingAction" data-mid="'+m.id+'" data-cid="'+c.id+'" title="Marquer comme fait" style="padding:1px 3px;opacity:0.55"><i class="ti ti-circle-check" style="font-size:13px;pointer-events:none"></i></button>'
+                      :'')
+                  +'</div>'
+                +'</td>'
                 +(function(){
                   var rdvEnabled=(c.statut==='RDV planifié'||c.statut==='RDV effectué');
                   var rdvDate=c.rdvDate||'';
@@ -3002,7 +3034,7 @@ document.addEventListener('change',function(e){
     const m=mailings.find(function(x){return x.id===mid;});
     if(!m)return;
     const c=m.contacts.find(function(x){return x.id===cid;});
-    if(c){c.statut=e.target.value;persist();renderMailing();}
+    if(c){c.statut=e.target.value;c.actionValidated=null;persist();renderMailing();}
   }
 });
 function setMailDateEnvoi(mid,cid,val){
