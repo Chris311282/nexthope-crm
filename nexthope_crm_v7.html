@@ -827,9 +827,9 @@ function persist(){
   var data={participants:participants,pistes:pistes,opps:opps,mailings:mailings,evtData:evtData};
   // Always save locally first
   try{localStorage.setItem('nh_crm_bak',JSON.stringify(data));}catch(e){}
-  // Save to Firebase via REST API
+  // Detach realtime listener before write to prevent stale-data echo
+  if(db&&fbListenerOn){db.ref('/').off('value');fbListenerOn=false;}
   setSyncStatus('saving');
-  persistPending=true;
   currentUser.getIdToken().then(function(token){
     return fetch('https://nexthope-crm-default-rtdb.firebaseio.com/.json?auth='+token,{
       method:'PUT',
@@ -837,10 +837,10 @@ function persist(){
       body:JSON.stringify(data)
     });
   }).then(function(r){
-    persistPending=false;
     if(r.ok){console.log('Firebase saved OK');setSyncStatus('ok');}
     else{console.error('Firebase save failed:',r.status);setSyncStatus('err');}
-  }).catch(function(e){persistPending=false;console.warn('Firebase save error:',e.message);setSyncStatus('err');});
+    startRealtimeSync();
+  }).catch(function(e){console.warn('Firebase save error:',e.message);setSyncStatus('err');startRealtimeSync();});
 }
 // load() defined above
 
