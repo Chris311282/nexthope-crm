@@ -1955,12 +1955,9 @@ function renderEvents(){
           +(pStatutApres==='RDV effectué'
             ?'<button class="btn-piste" style="font-size:11px;padding:4px 8px;white-space:nowrap" data-action="convertEnPisteEvent" data-id="'+p.id+'">+ Piste</button>'
             :'<button disabled style="font-size:11px;padding:4px 8px;white-space:nowrap;opacity:0.38;cursor:not-allowed;background:var(--bg2);color:var(--txm);border:0.5px solid var(--bl);border-radius:6px">+ Piste</button>')
-          +(currentUser&&currentUser.email===SUPER_ADMIN
-            ?'<button data-action="delParticipant" data-id="'+p.id+'" title="Supprimer ce participant"'
-              +' style="font-size:11px;padding:4px 7px;margin-left:5px;background:transparent;border:0.5px solid #E24B4A;border-radius:6px;color:#E24B4A;cursor:pointer;line-height:1">'
-              +'<i class="ti ti-trash" style="font-size:12px;pointer-events:none"></i>'
-              +'</button>'
-            :'')
+          +'<button class="abtn" data-action="delParticipant" data-id="'+p.id+'" title="Supprimer ce participant" style="color:#E24B4A">'
+            +'<i class="ti ti-trash" style="font-size:12px;pointer-events:none"></i>'
+            +'</button>'
         +'</td>'
         +'</tr>';
     }).join('');
@@ -2006,6 +2003,7 @@ function renderEvents(){
         // Right: action buttons + chevron
         +'<div style="display:flex;gap:4px;flex-shrink:0;align-items:center">'
           +'<button class="abtn" data-action="addParticipant" data-id="'+e+'" title="Ajouter participant"><i class="ti ti-user-plus" style="pointer-events:none"></i></button>'
+          +'<button class="abtn" data-action="importEvtCSV" data-id="'+e+'" title="Importer CSV"><i class="ti ti-upload" style="pointer-events:none"></i></button>'
           +(currentUser&&currentUser.email===SUPER_ADMIN
             ?'<button class="abtn" data-action="delEvent" data-id="'+e+'" title="Supprimer l\'événement" style="color:#E24B4A"><i class="ti ti-trash" style="pointer-events:none"></i></button>'
             :'')
@@ -2469,6 +2467,7 @@ document.addEventListener('click',function(e){
   else if(act==='delEvent'){e.stopPropagation();delEvent(id);}
   else if(act==='convertEnPisteEvent'){e.stopPropagation();convertEnPiste('event', id);}
   else if(act==='addMailingContact'){e.stopPropagation();openAddMailingContactModal(id);}
+  else if(act==='importEvtCSV'){e.stopPropagation();openImportEvtCSV(id);}
   else if(act==='importMailingCSV'){e.stopPropagation();openImportMailingCSV(id);}
   else if(act==='delMailing'){e.stopPropagation();delMailing(id);}
   else if(act==='editMailingContact'){
@@ -2569,6 +2568,7 @@ document.addEventListener('keydown',function(e){
 const MAIL_STATUS=['Non envoyé','Envoyé','Pas de retour','Indisponible','Pas intéressé','RDV planifié','RDV effectué'];
 const MAIL_STATUS_BADGE={'Non envoyé':'b-mailing','Envoyé':'b-envoye','Pas de retour':'b-pas-retour','Indisponible':'b-indispo-mail','Pas intéressé':'b-pas-int','RDV planifié':'b-rdv-plan','RDV effectué':'b-rdv-ok'};
 let currentMailingId=null, csvParsedData=[], mlCsvParsedData=[];
+let currentEvtImportName=null, evtCsvParsedData=[];
 var mlComm='';
 function setMailComm(c){mlComm=c;renderMailing();}
 function commStatsHTML(items, actionFn, itemLabel){
@@ -2812,6 +2812,37 @@ function saveMailingContact(){
   persist();closeModals();renderMailing();
 }
 
+function openImportEvtCSV(evtnom){
+  currentEvtImportName=evtnom;
+  evtCsvParsedData=[];
+  const fileEl=document.getElementById('evt-csv-file');
+  if(fileEl)fileEl.value='';
+  document.getElementById('evt-csv-preview').style.display='none';
+  document.getElementById('import-evt-modal').style.display='flex';
+}
+function importEvtCSV(){
+  if(!evtCsvParsedData.length){alert('Aucun participant à importer. Vérifiez le fichier CSV.');return;}
+  if(!currentEvtImportName)return;
+  var evtdate=(evtData[currentEvtImportName]&&evtData[currentEvtImportName].date)||'';
+  var newParts=evtCsvParsedData.map(function(c){
+    return{
+      id:'p_'+uid(),
+      nom:c.nom,
+      societe:c.societe,
+      poste:c.poste,
+      email:c.email,
+      tel:c.tel,
+      evtnom:currentEvtImportName,
+      evtdate:evtdate,
+      statut:'À confirmer',
+      piste_ids:[]
+    };
+  });
+  participants=participants.concat(newParts);
+  updateEvtPresents(currentEvtImportName);
+  evtCsvParsedData=[];
+  persist();closeModals();renderEvents();
+}
 function openImportMailingCSV(mailingId){
   currentMailingId=mailingId;
   csvParsedData=[];
@@ -2914,6 +2945,18 @@ document.addEventListener('change',function(e){
       if(!mlCsvParsedData.length){alert('Aucun contact détecté. Vérifiez le format du fichier.');return;}
       showCsvPreview(mlCsvParsedData,'ml-csv-preview-table','ml-csv-count-text',' contact détecté','s');
       var pr=document.getElementById('ml-csv-preview');if(pr)pr.style.display='block';
+    };
+    reader.readAsText(file,'UTF-8');
+  }
+  // CSV file input (event participants import)
+  if(e.target.id==='evt-csv-file'){
+    var file=e.target.files[0];if(!file)return;
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      evtCsvParsedData=parseMailingCSV(ev.target.result);
+      if(!evtCsvParsedData.length){alert('Aucun participant détecté. Vérifiez le format du fichier.');return;}
+      showCsvPreview(evtCsvParsedData,'evt-csv-preview-table','evt-csv-count','','');
+      document.getElementById('evt-csv-preview').style.display='block';
     };
     reader.readAsText(file,'UTF-8');
   }
@@ -3169,6 +3212,26 @@ document.addEventListener('click',function(e){
       <div id="csv-preview-table" style="overflow-x:auto;max-height:200px;overflow-y:auto"></div>
     </div>
     <div class="fact"><button class="bcancel" onclick="closeModals()">Annuler</button><button class="bsave" onclick="importMailingCSV()">Importer</button></div>
+  </div>
+</div>
+
+<!-- MODAL IMPORT CSV EVENEMENT -->
+<div class="overlay" id="import-evt-modal" style="display:none" onclick="if(event.target.id==='import-evt-modal')closeModals()">
+  <div class="modal">
+    <div class="mhd"><span>Importer des participants CSV</span><button class="abtn" onclick="closeModals()"><i class="ti ti-x"></i></button></div>
+    <div style="background:var(--bg2);border-radius:var(--rm);padding:1rem;margin-bottom:1rem;font-size:13px;color:var(--tx2)">
+      <i class="ti ti-info-circle" style="margin-right:6px"></i>
+      Format attendu : <strong>Nom, Société, Poste, Email, Téléphone</strong> (en-tête sur la 1ère ligne)
+    </div>
+    <div class="fg full" style="margin-bottom:1rem">
+      <label class="flabel">Fichier CSV</label>
+      <input type="file" id="evt-csv-file" accept=".csv" style="font-size:13px;padding:8px;border-radius:var(--rm);border:0.5px solid var(--bm);background:var(--bg2);color:var(--tx);width:100%">
+    </div>
+    <div id="evt-csv-preview" style="display:none;margin-bottom:1rem">
+      <div class="slabel">Aperçu (<span id="evt-csv-count">0</span> participants détectés)</div>
+      <div id="evt-csv-preview-table" style="overflow-x:auto;max-height:200px;overflow-y:auto"></div>
+    </div>
+    <div class="fact"><button class="bcancel" onclick="closeModals()">Annuler</button><button class="bsave" onclick="importEvtCSV()">Importer</button></div>
   </div>
 </div>
 
