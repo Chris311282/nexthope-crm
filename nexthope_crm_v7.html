@@ -1736,7 +1736,7 @@ function getEvtAction(p){
   if(p.statutPost==='Absent') return '—';
   // Avant evt
   var statut=p.statut||'À confirmer';
-  if(statut==='Indisponible') return '—';
+  if(statut==='Indisponible') return '';
   var today=new Date(); today.setHours(0,0,0,0);
   var evtDate=getEvtDate(p.evtnom);
   var daysToEvent=evtDate?Math.round((evtDate.getTime()-today.getTime())/86400000):null;
@@ -1750,6 +1750,7 @@ function getEvtAction(p){
 const MAIL_STATUS_ACTION={'Non envoyé':'À envoyer','Envoyé':'En attente de retour','Pas de retour':'Relancer J+7','Indisponible':'À relancer ultérieurement','Pas intéressé':'Envoi catalogue','RDV planifié':'Entretien à préparer','RDV effectué':'—'};
 const CAMP_ACTION_COLOR={'À relancer':'#c97a10','Rappel J-1':'#1A7AEA','Mail reminder à envoyer':'#1A7AEA','RDV à planifier':'#7A1AEA','RDV à préparer':'#1d4ed8','Suivi commercial':'#1AAE6A','À envoyer':'#c97a10','À appeler':'#7A1AEA','Prochain évènement':'#8A5AEA','En attente de retour':'#6b7280','Relancer':'#b45309','Pas de retour':'#92400e','Relancer J+7':'#b45309','À relancer ultérieurement':'#6d28d9','Entretien à préparer':'#1d4ed8','Envoi catalogue':'#0f766e','—':'var(--txm)'};
 function campActionTag(action){
+  if(!action)return '<span style="font-size:11px;color:var(--txm);opacity:0.4">—</span>';
   var c=CAMP_ACTION_COLOR[action]||'var(--txm)';
   return action==='—'
     ?'<span style="font-size:11px;color:var(--txm)">—</span>'
