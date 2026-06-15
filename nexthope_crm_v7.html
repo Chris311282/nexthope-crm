@@ -1645,6 +1645,7 @@ function openEditParticipantModal(pid){
   document.getElementById('ep2-statut').value=p.statut||'À confirmer';
   document.getElementById('ep2-statut-post').value=p.statutPost||'';
   document.getElementById('ep2-statut-apres').value=p.statutApres||'';
+  document.getElementById('ep2-rdv-date').value=p.rdvDate||'';
   _updateEp2PostLock();
   document.getElementById('ep2-remarques').value=p.remarques||'';
   document.getElementById('edit-participant-modal').setAttribute('data-pid',pid);
@@ -1669,6 +1670,13 @@ function _updateEp2ApresLock(){
   wrap.style.opacity=isPresent?'1':'0.38';
   wrap.style.cursor=isPresent?'':'not-allowed';
   if(!isPresent){sel.value='';}
+  var hasApres=!!sel.value;
+  var dateInp=document.getElementById('ep2-rdv-date');
+  var dateWrap=document.getElementById('ep2-rdv-date-wrap');
+  dateInp.disabled=!hasApres;
+  dateWrap.style.opacity=hasApres?'1':'0.38';
+  dateWrap.style.cursor=hasApres?'':'not-allowed';
+  if(!hasApres){dateInp.value='';}
 }
 function saveEditParticipant(){
   const modal=document.getElementById('edit-participant-modal');
@@ -1687,6 +1695,7 @@ function saveEditParticipant(){
   p.statut=document.getElementById('ep2-statut').value;
   p.statutPost=document.getElementById('ep2-statut-post').value||null;
   p.statutApres=p.statutPost==='Présent'?(document.getElementById('ep2-statut-apres').value||null):null;
+  p.rdvDate=p.statutApres?(document.getElementById('ep2-rdv-date').value||null):null;
   p.remarques=document.getElementById('ep2-remarques').value.trim();
   updateEvtPresents(p.evtnom);
   persist();closeModals();renderEvents();
@@ -1714,8 +1723,8 @@ function getEvtDate(evtnom){
   return d?new Date(d+'T00:00:00'):null;
 }
 function getEvtAction(p){
-  // Après evt renseigné → rien à faire
-  if(p.statutApres) return '—';
+  if(p.statutApres==='RDV planifié') return 'RDV à préparer';
+  if(p.statutApres==='RDV effectué') return '—';
   // Pendant evt : présent (RDV géré manuellement dans Après évt)
   if(p.statutPost==='Présent') return '—';
   // Absent → rien à faire
@@ -1734,7 +1743,7 @@ function getEvtAction(p){
   return 'À relancer';
 }
 const MAIL_STATUS_ACTION={'Non envoyé':'À envoyer','Envoyé':'En attente de retour','Pas de retour':'Relancer J+7','Indisponible':'À relancer ultérieurement','Pas intéressé':'Envoi catalogue','RDV planifié':'Entretien à préparer','RDV effectué':'—'};
-const CAMP_ACTION_COLOR={'À relancer':'#c97a10','Rappel J-1':'#1A7AEA','Mail reminder à envoyer':'#1A7AEA','RDV à planifier':'#7A1AEA','Suivi commercial':'#1AAE6A','À envoyer':'#c97a10','À appeler':'#7A1AEA','Prochain évènement':'#8A5AEA','En attente de retour':'#6b7280','Relancer':'#b45309','Pas de retour':'#92400e','Relancer J+7':'#b45309','À relancer ultérieurement':'#6d28d9','Entretien à préparer':'#1d4ed8','Envoi catalogue':'#0f766e','—':'var(--txm)'};
+const CAMP_ACTION_COLOR={'À relancer':'#c97a10','Rappel J-1':'#1A7AEA','Mail reminder à envoyer':'#1A7AEA','RDV à planifier':'#7A1AEA','RDV à préparer':'#1d4ed8','Suivi commercial':'#1AAE6A','À envoyer':'#c97a10','À appeler':'#7A1AEA','Prochain évènement':'#8A5AEA','En attente de retour':'#6b7280','Relancer':'#b45309','Pas de retour':'#92400e','Relancer J+7':'#b45309','À relancer ultérieurement':'#6d28d9','Entretien à préparer':'#1d4ed8','Envoi catalogue':'#0f766e','—':'var(--txm)'};
 function campActionTag(action){
   var c=CAMP_ACTION_COLOR[action]||'var(--txm)';
   return action==='—'
@@ -1887,6 +1896,19 @@ function renderEvents(){
             +'</div>'
           +'</td>';
         })()
+        // Date RDV — éditable si Après évt renseigné
+        +(function(){
+          var dateEnabled=!!pStatutApres;
+          var rdvDate=p.rdvDate||'';
+          var displayDate=rdvDate?new Date(rdvDate+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}):'—';
+          var cellStyle='padding:6px 8px;font-size:11px'+(dateEnabled?'':';opacity:0.38;cursor:not-allowed');
+          return '<td style="'+cellStyle+'" onclick="event.stopPropagation()">'
+            +(dateEnabled
+              ?'<input type="date" value="'+rdvDate+'" data-action="updateParticipantRdvDate" data-pid="'+p.id+'"'
+                +' style="font-size:11px;padding:2px 5px;border-radius:5px;border:0.5px solid var(--bm);background:var(--bg);color:var(--tx);font-family:var(--fn);cursor:pointer;width:120px">'
+              :'<span style="color:var(--txm)">—</span>')
+            +'</td>';
+        })()
         +'<td style="padding:7px 8px;white-space:nowrap">'+campActionTag(evtAction)+'</td>'
         +'<td style="padding:7px 8px;text-align:right;white-space:nowrap">'
           +(pisteCnt>0?'<span class="badge b-piste" style="font-size:10px;margin-right:5px">'+pisteCnt+' piste'+(pisteCnt>1?'s':'')+'</span>':'')
@@ -1970,6 +1992,7 @@ function renderEvents(){
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Avant évt</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Pdt évt</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Après évt</th>'
+            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Date RDV</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Action</th>'
             +'<th style="padding:6px 8px;border-bottom:0.5px solid var(--bl)"></th>'
           +'</tr></thead>'
@@ -2439,7 +2462,16 @@ document.addEventListener('change',function(e){
   if(e.target.getAttribute('data-action')==='updateParticipantStatutApres'){
     const pid=e.target.getAttribute('data-pid');
     const p=participants.find(function(x){return x.id===pid;});
-    if(p){p.statutApres=e.target.value||null;persist();renderEvents();}
+    if(p){
+      p.statutApres=e.target.value||null;
+      if(!p.statutApres)p.rdvDate=null;
+      persist();renderEvents();
+    }
+  }
+  if(e.target.getAttribute('data-action')==='updateParticipantRdvDate'){
+    const pid=e.target.getAttribute('data-pid');
+    const p=participants.find(function(x){return x.id===pid;});
+    if(p){p.rdvDate=e.target.value||null;persist();}
   }
 });
 document.addEventListener('focusin',function(e){
@@ -3216,11 +3248,14 @@ document.addEventListener('click',function(e){
         </select>
       </div>
       <div class="fg" id="ep2-statut-apres-wrap"><label class="flabel">Après l'évènement</label>
-        <select id="ep2-statut-apres">
+        <select id="ep2-statut-apres" onchange="_updateEp2ApresLock()">
           <option value="">— Non renseigné —</option>
           <option value="RDV planifié">RDV planifié</option>
           <option value="RDV effectué">RDV effectué</option>
         </select>
+      </div>
+      <div class="fg" id="ep2-rdv-date-wrap"><label class="flabel">Date du RDV</label>
+        <input type="date" id="ep2-rdv-date">
       </div>
       <div class="fg full"><label class="flabel">Remarques</label>
         <textarea id="ep2-remarques" rows="2" placeholder="Notes libres sur ce participant..."></textarea>
