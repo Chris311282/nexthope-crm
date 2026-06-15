@@ -1901,18 +1901,12 @@ function renderEvents(){
           +'</td>';
         })()
         +'<td style="padding:7px 8px;white-space:nowrap">'+campActionTag(evtAction)+'</td>'
-        // Date RDV — éditable si Après évt renseigné
+        // Date RDV — affichée en lecture seule, modifiable via modal
         +(function(){
-          var dateEnabled=!!pStatutApres;
           var rdvDate=p.rdvDate||'';
-          var cellStyle='padding:6px 8px;font-size:11px'+(dateEnabled?'':';opacity:0.38;cursor:not-allowed');
-          return '<td style="'+cellStyle+'" onclick="event.stopPropagation()">'
-            +(dateEnabled
-              ?'<input type="date" value="'+rdvDate+'" data-pid="'+p.id+'"'
-                +' onchange="setParticipantRdvDate(this)" onclick="event.stopPropagation()"'
-                +' style="font-size:11px;padding:2px 5px;border-radius:5px;border:0.5px solid var(--bm);background:var(--bg);color:var(--tx);font-family:var(--fn);cursor:pointer;width:120px">'
-              :'<span style="color:var(--txm)">—</span>')
-            +'</td>';
+          var displayDate=rdvDate?new Date(rdvDate+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}):'—';
+          var col=rdvDate?'var(--tx)':'var(--txm)';
+          return '<td style="padding:7px 8px;font-size:11px;color:'+col+'">'+displayDate+'</td>';
         })()
         +'<td style="padding:7px 8px;text-align:right;white-space:nowrap">'
           +(pisteCnt>0?'<span class="badge b-piste" style="font-size:10px;margin-right:5px">'+pisteCnt+' piste'+(pisteCnt>1?'s':'')+'</span>':'')
