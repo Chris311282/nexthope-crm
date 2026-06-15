@@ -1738,6 +1738,10 @@ function setParticipantRdvDate(inp){
   var p=participants.find(function(x){return x.id===inp.getAttribute('data-pid');});
   if(p){p.rdvDate=inp.value||null;persist();renderEvents();}
 }
+function setParticipantActionDate(inp){
+  var p=participants.find(function(x){return x.id===inp.getAttribute('data-pid');});
+  if(p){p.actionDate=inp.value||null;persist();renderEvents();}
+}
 const EVT_STATUT_APRES=['RDV planifié','RDV effectué'];
 const EVT_STATUT_APRES_CELL={
   'RDV planifié':{bg:'rgba(26,122,234,.13)',color:'#0c5294'},
@@ -1928,6 +1932,21 @@ function renderEvents(){
           +'</td>';
         })()
         +'<td style="padding:7px 8px;white-space:nowrap">'+campActionTag(evtAction)+'</td>'
+        // Date action — toujours éditable
+        +(function(){
+          var actionDate=p.actionDate||'';
+          var displayDate=actionDate?new Date(actionDate+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}):'—';
+          var spanStyle='display:inline-block;font-size:11px;padding:2px 4px;white-space:nowrap;pointer-events:none;'
+            +(actionDate?'color:var(--tx);font-weight:500':'color:var(--txm);font-weight:400');
+          return '<td style="padding:6px 8px" onclick="event.stopPropagation();var i=this.querySelector(\'input[type=date]\');if(i){try{i.showPicker();}catch(e){i.focus();}}">'
+            +'<div style="position:relative;display:inline-block">'
+              +'<span style="'+spanStyle+'">'+displayDate+'</span>'
+              +'<input type="date" value="'+actionDate+'" data-pid="'+p.id+'"'
+                +' onchange="setParticipantActionDate(this)"'
+                +' style="position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:none">'
+            +'</div>'
+          +'</td>';
+        })()
         // Date RDV — même pattern span+select invisible que les statuts
         +(function(){
           var dateEnabled=!!pStatutApres;
@@ -1955,7 +1974,7 @@ function renderEvents(){
           +(pStatutApres==='RDV effectué'
             ?'<button class="btn-piste" style="font-size:11px;padding:4px 8px;white-space:nowrap" data-action="convertEnPisteEvent" data-id="'+p.id+'">+ Piste</button>'
             :'<button disabled style="font-size:11px;padding:4px 8px;white-space:nowrap;opacity:0.38;cursor:not-allowed;background:var(--bg2);color:var(--txm);border:0.5px solid var(--bl);border-radius:6px">+ Piste</button>')
-          +'<button class="abtn" data-action="delParticipant" data-id="'+p.id+'" title="Supprimer ce participant" style="color:#E24B4A">'
+          +'<button class="abtn" data-action="delParticipant" data-id="'+p.id+'" title="Supprimer ce participant">'
             +'<i class="ti ti-trash" style="font-size:12px;pointer-events:none"></i>'
             +'</button>'
         +'</td>'
@@ -2039,6 +2058,7 @@ function renderEvents(){
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Pdt évt</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Après évt</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Action</th>'
+            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Date action</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Date RDV</th>'
             +'<th style="padding:6px 8px;border-bottom:0.5px solid var(--bl)"></th>'
           +'</tr></thead>'
