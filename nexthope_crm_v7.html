@@ -2420,7 +2420,10 @@ document.addEventListener('click',function(e){
   else if(act==='delPiste'){e.stopPropagation();delPiste(id);}
   else if(act==='toggleEvtDetail')toggleEvtDetail(sid);
   else if(act==='addParticipant'){e.stopPropagation();openAddParticipantModal(id);}
-  else if(act==='editParticipant')openEditParticipantModal(id);
+  else if(act==='editParticipant'){
+    if(e.target.closest('input,select,button'))return;
+    openEditParticipantModal(id);
+  }
   else if(act==='convertEnPisteEvent'){e.stopPropagation();convertEnPiste('event', id);}
   else if(act==='addMailingContact'){e.stopPropagation();openAddMailingContactModal(id);}
   else if(act==='importMailingCSV'){e.stopPropagation();openImportMailingCSV(id);}
