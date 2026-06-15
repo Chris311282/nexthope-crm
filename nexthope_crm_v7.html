@@ -1693,7 +1693,8 @@ function saveEditParticipant(){
   p.tel=document.getElementById('ep2-tel').value.trim();
   p.assigne=document.getElementById('ep2-assigne').value||null;
   p.statut=document.getElementById('ep2-statut').value;
-  p.statutPost=document.getElementById('ep2-statut-post').value||null;
+  var _statutOk=(p.statut!=='Indisponible'&&p.statut!=='Pas de retour');
+  p.statutPost=_statutOk?(document.getElementById('ep2-statut-post').value||null):null;
   p.statutApres=p.statutPost==='Présent'?(document.getElementById('ep2-statut-apres').value||null):null;
   p.rdvDate=p.statutApres?(document.getElementById('ep2-rdv-date').value||null):null;
   p.remarques=document.getElementById('ep2-remarques').value.trim();
@@ -2458,7 +2459,13 @@ document.addEventListener('change',function(e){
   if(e.target.getAttribute('data-action')==='updateParticipantStatut'){
     const pid=e.target.getAttribute('data-pid');
     const p=participants.find(function(x){return x.id===pid;});
-    if(p){p.statut=e.target.value;updateEvtPresents(p.evtnom);persist();renderEvents();}
+    if(p){
+      p.statut=e.target.value;
+      if(p.statut==='Indisponible'||p.statut==='Pas de retour'){
+        p.statutPost=null;p.statutApres=null;p.rdvDate=null;
+      }
+      updateEvtPresents(p.evtnom);persist();renderEvents();
+    }
   }
   if(e.target.getAttribute('data-action')==='updateParticipantStatutPost'){
     const pid=e.target.getAttribute('data-pid');
