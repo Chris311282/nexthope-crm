@@ -1901,21 +1901,21 @@ function renderEvents(){
           +'</td>';
         })()
         +'<td style="padding:7px 8px;white-space:nowrap">'+campActionTag(evtAction)+'</td>'
-        // Date RDV — span visible + input date transparent par-dessus (même pattern que les selects de statut)
+        // Date RDV — même pattern span+select invisible que les statuts
         +(function(){
           var dateEnabled=!!pStatutApres;
           var rdvDate=p.rdvDate||'';
-          var displayDate=rdvDate?new Date(rdvDate+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}):'Choisir date';
+          var displayDate=rdvDate?new Date(rdvDate+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}):'—';
           var spanStyle='display:inline-block;font-size:11px;padding:2px 8px;border-radius:5px;white-space:nowrap;pointer-events:none;'
             +(rdvDate?'background:rgba(26,122,234,.10);color:#0c5294;font-weight:500':'background:var(--bg2);color:var(--txm);font-weight:400');
           var cellStyle='padding:6px 8px'+(dateEnabled?'':';opacity:0.38;cursor:not-allowed');
-          return '<td style="'+cellStyle+'">'
+          return '<td style="'+cellStyle+'" onclick="event.stopPropagation()">'
             +'<div style="position:relative;display:inline-block">'
               +'<span style="'+spanStyle+'">'+displayDate+'</span>'
               +(dateEnabled
                 ?'<input type="date" value="'+rdvDate+'" data-pid="'+p.id+'"'
                   +' onchange="setParticipantRdvDate(this)"'
-                  +' style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:11px">'
+                  +' style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer">'
                 :'')
             +'</div>'
           +'</td>';
@@ -2426,10 +2426,7 @@ document.addEventListener('click',function(e){
   else if(act==='delPiste'){e.stopPropagation();delPiste(id);}
   else if(act==='toggleEvtDetail')toggleEvtDetail(sid);
   else if(act==='addParticipant'){e.stopPropagation();openAddParticipantModal(id);}
-  else if(act==='editParticipant'){
-    if(e.target.closest('input,select,button'))return;
-    openEditParticipantModal(id);
-  }
+  else if(act==='editParticipant')openEditParticipantModal(id);
   else if(act==='convertEnPisteEvent'){e.stopPropagation();convertEnPiste('event', id);}
   else if(act==='addMailingContact'){e.stopPropagation();openAddMailingContactModal(id);}
   else if(act==='importMailingCSV'){e.stopPropagation();openImportMailingCSV(id);}
