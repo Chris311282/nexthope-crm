@@ -2705,6 +2705,7 @@ function renderMailing(){
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:9%">Assigné</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:11%">Statut</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Action</th>'
+            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Date RDV</th>'
             +'<th style="text-align:right;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)"></th>'
           +'</tr></thead>'
           +'<tbody>'
@@ -2732,6 +2733,27 @@ function renderMailing(){
                   +'</div>'
                 +'</td>'
                 +'<td style="padding:7px 8px;white-space:nowrap">'+campActionTag(mailAction)+'</td>'
+                +(function(){
+                  var rdvEnabled=(c.statut==='RDV planifié'||c.statut==='RDV effectué');
+                  var rdvDate=c.rdvDate||'';
+                  var displayDate=rdvDate?new Date(rdvDate+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}):'—';
+                  var spanStyle='display:inline-block;font-size:11px;padding:2px 4px;white-space:nowrap;pointer-events:none;'
+                    +(rdvDate?'color:var(--tx);font-weight:500':'color:var(--txm);font-weight:400');
+                  var cellStyle='padding:6px 8px'+(rdvEnabled?'':';opacity:0.38;cursor:not-allowed');
+                  var tdClick=rdvEnabled
+                    ?'event.stopPropagation();var i=this.querySelector(\'input[type=date]\');if(i){try{i.showPicker();}catch(e){i.focus();}}'
+                    :'event.stopPropagation()';
+                  return '<td style="'+cellStyle+'" onclick="'+tdClick+'">'
+                    +'<div style="position:relative;display:inline-block">'
+                      +'<span style="'+spanStyle+'">'+displayDate+'</span>'
+                      +(rdvEnabled
+                        ?'<input type="date" value="'+rdvDate+'" data-mid="'+m.id+'" data-cid="'+c.id+'"'
+                          +' onchange="setMailContactRdvDate(this)"'
+                          +' style="position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:none">'
+                        :'')
+                    +'</div>'
+                  +'</td>';
+                })()
                 +'<td style="padding:7px 8px;text-align:right;white-space:nowrap">'
                   +(hasPiste?'<span class="badge b-ouvert" style="font-size:10px;margin-right:5px">'+pisteCntM+' piste'+(pisteCntM>1?'s':'')+'</span>':'')
                   +(c.statut==='RDV effectué'
@@ -2988,6 +3010,12 @@ function setMailDateEnvoi(mid,cid,val){
   if(!m)return;
   var c=m.contacts.find(function(x){return x.id===cid;});
   if(c){c.dateEnvoi=val||null;persist();renderMailing();}
+}
+function setMailContactRdvDate(inp){
+  var m=mailings.find(function(x){return x.id===inp.getAttribute('data-mid');});
+  if(!m)return;
+  var c=m.contacts.find(function(x){return x.id===inp.getAttribute('data-cid');});
+  if(c){c.rdvDate=inp.value||null;persist();renderMailing();}
 }
 
 function importMailingCSV(){
