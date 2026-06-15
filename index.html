@@ -2024,7 +2024,7 @@ function renderEvents(){
           +'<button class="abtn" data-action="addParticipant" data-id="'+e+'" title="Ajouter participant"><i class="ti ti-user-plus" style="pointer-events:none"></i></button>'
           +'<button class="abtn" data-action="importEvtCSV" data-id="'+e+'" title="Importer CSV"><i class="ti ti-upload" style="pointer-events:none"></i></button>'
           +(currentUser&&currentUser.email===SUPER_ADMIN
-            ?'<button class="abtn" data-action="delEvent" data-id="'+e+'" title="Supprimer l\'événement" style="color:#E24B4A"><i class="ti ti-trash" style="pointer-events:none"></i></button>'
+            ?'<button class="abtn" data-action="delEvent" data-id="'+e+'" title="Supprimer l\'événement"><i class="ti ti-trash" style="pointer-events:none"></i></button>'
             :'')
           +'<i class="ti ti-chevron-down" id="icon_'+sid+'"'
             +' style="font-size:16px;color:var(--tx2);transition:transform .2s;margin-left:2px"></i>'
