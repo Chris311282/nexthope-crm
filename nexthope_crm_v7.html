@@ -8,7 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 var firebaseConfig={apiKey:"AIzaSyAh5L4AfdA2AiKw_TPigeOZnKHcbMAfSPY",authDomain:"nexthope-crm.firebaseapp.com",databaseURL:"https://nexthope-crm-default-rtdb.firebaseio.com",projectId:"nexthope-crm",storageBucket:"nexthope-crm.firebasestorage.app",messagingSenderId:"1081760615967",appId:"1:1081760615967:web:f1fec063dad47064560f2a"};
-var db=null,auth=null,currentUser=null,fbListenerOn=false,fbSyncing=false;
+var db=null,auth=null,currentUser=null,fbListenerOn=false,fbSyncing=false,persistPending=false;
 </script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -725,6 +725,7 @@ function startRealtimeSync(){
   fbListenerOn=true;
   db.ref('/').on('value',function(snap){
     if(!currentUser)return;
+    if(persistPending)return;
     var d=snap.val();
     if(!d)return;
     participants=toArr(d.participants);
@@ -828,6 +829,7 @@ function persist(){
   try{localStorage.setItem('nh_crm_bak',JSON.stringify(data));}catch(e){}
   // Save to Firebase via REST API
   setSyncStatus('saving');
+  persistPending=true;
   currentUser.getIdToken().then(function(token){
     return fetch('https://nexthope-crm-default-rtdb.firebaseio.com/.json?auth='+token,{
       method:'PUT',
@@ -835,9 +837,10 @@ function persist(){
       body:JSON.stringify(data)
     });
   }).then(function(r){
+    persistPending=false;
     if(r.ok){console.log('Firebase saved OK');setSyncStatus('ok');}
     else{console.error('Firebase save failed:',r.status);setSyncStatus('err');}
-  }).catch(function(e){console.warn('Firebase save error:',e.message);setSyncStatus('err');});
+  }).catch(function(e){persistPending=false;console.warn('Firebase save error:',e.message);setSyncStatus('err');});
 }
 // load() defined above
 
