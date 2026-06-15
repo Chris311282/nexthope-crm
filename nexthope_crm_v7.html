@@ -604,12 +604,11 @@ tr:hover td{background:var(--bg2)}
     <div class="fgrid">
       <div class="fg"><label class="flabel">Étape</label>
         <select id="e-stage" onchange="updateActionList('e-action','e-stage')">
-          <option value="Demande RDV">Demande RDV</option>
-          <option value="RDV planifié">RDV planifié</option>
-          <option value="Qualification besoin">Qualification besoin</option>
-          <option value="POC / POV">POC / POV</option>
+          <option value="Analyse besoin">Analyse besoin</option>
+          <option value="Démo">Démo</option>
+          <option value="Test préliminaire">Test préliminaire</option>
           <optgroup label="─── Terminé ───">
-            <option value="Concluant">↳ Concluant</option>
+            <option value="Opportunité">↳ Opportunité</option>
             <option value="À creuser">↳ À creuser</option>
             <option value="En veille">↳ En veille</option>
             <option value="Abandonné">↳ Abandonné</option>
@@ -778,28 +777,27 @@ function refreshTab(){
   else if(curTab==='stats-crm')renderStatsCrm();
 }
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
-const PIPE_STAGES=['Demande RDV','RDV planifié','Qualification besoin','POC / POV'];
-const TERM_STAGES=['Concluant','À creuser','En veille','Abandonné'];
+const PIPE_STAGES=['Analyse besoin','Démo','Test préliminaire'];
+const TERM_STAGES=['Opportunité','À creuser','En veille','Abandonné'];
 const ALL_STAGES=[...PIPE_STAGES,...TERM_STAGES];
-const DISPLAY_STAGES=['Demande RDV','RDV planifié','Qualification besoin','POC / POV','Terminé'];
+const DISPLAY_STAGES=['Analyse besoin','Démo','Test préliminaire','Terminé'];
 
 const STAGE_ACTIONS={
-  'Demande RDV':['Envoyer email de contact','Appel téléphonique','Relance J+3','Relance J+7','Relance J+14','Proposer un créneau'],
-  'RDV planifié':['Confirmer RDV (J-1)','Envoyer agenda','Préparer support de présentation','Envoyer rappel'],
-  'Qualification besoin':['Envoyer synthèse du RDV','Préparer proposition technique','Demander informations complémentaires','Planifier démo'],
-  'POC / POV':['Lancer le POC','Suivi hebdomadaire','Bilan intermédiaire POC','Présenter les résultats'],
-  'Concluant':[],'À creuser':[],'En veille':['Relance dans 3 mois','Relance dans 6 mois'],'Abandonné':[]
+  'Analyse besoin':['Envoyer questionnaire besoin','Appel de découverte','Envoyer synthèse','Demander informations complémentaires'],
+  'Démo':['Préparer scénario de démo','Envoyer invitation démo','Réaliser la démo','Envoyer compte-rendu démo'],
+  'Test préliminaire':['Lancer le test','Suivi hebdomadaire','Bilan intermédiaire','Présenter les résultats'],
+  'Opportunité':[],'À creuser':[],'En veille':['Relance dans 3 mois','Relance dans 6 mois'],'Abandonné':[]
 };
 
 const SBADGE={
-  'Demande RDV':'b-rdvd','RDV planifié':'b-rdvp',
-  'Qualification besoin':'b-qual','POC / POV':'b-poc',
+  'Analyse besoin':'b-qual','Démo':'b-poc',
+  'Test préliminaire':'b-rdvp',
   'Terminé':'b-veille',
-  'Concluant':'b-concluant','À creuser':'b-acreuser',
+  'Opportunité':'b-concluant','À creuser':'b-acreuser',
   'En veille':'b-veille','Abandonné':'b-abandonne'
 };
-const PIPE_COLORS={'Demande RDV':'#1A7AEA','RDV planifié':'#2d4baa','Qualification besoin':'#7A1AEA','POC / POV':'#5b21b6','Terminé':'#444'};
-const TERM_COLORS={'Concluant':'#1AAE6A','À creuser':'#c97a10','En veille':'#888780','Abandonné':'#E24B4A'};
+const PIPE_COLORS={'Analyse besoin':'#1A7AEA','Démo':'#7A1AEA','Test préliminaire':'#5b21b6','Terminé':'#444'};
+const TERM_COLORS={'Opportunité':'#1AAE6A','À creuser':'#c97a10','En veille':'#888780','Abandonné':'#E24B4A'};
 
 const COMMS=['Nickie','Tsilavo','Fabio'];
 const CCOLORS=['#A01864','#1A7AEA','#1AAE6A'];
@@ -917,7 +915,7 @@ function renderDash(){
   const filtPistes=comm?pistes.filter(l=>l.assigne===comm):pistes;
 
   const inPipe=filtered.filter(o=>PIPE_STAGES.includes(o.stage));
-  const concluant=filtered.filter(o=>o.stage==='Concluant').length;
+  const concluant=filtered.filter(o=>o.stage==='Opportunité').length;
   const valPipeline=inPipe.reduce((s,o)=>s+(parseInt(o.valeur)||0),0);
   const today=new Date();today.setHours(0,0,0,0);
   const enRetard=filtered.filter(o=>{
@@ -928,7 +926,7 @@ function renderDash(){
   // KPIs
   document.getElementById('dash-metrics').innerHTML=[
     {l:'Pistes',v:filtPistes.length,c:'c1'},
-    {l:'Concluants',v:concluant,c:'c4'},
+    {l:'Opportunités',v:concluant,c:'c4'},
     {l:'À creuser',v:filtered.filter(o=>o.stage==='À creuser').length,c:'c1'},
     {l:'En veille',v:filtered.filter(o=>o.stage==='En veille').length,c:'c3'},
     {l:'Abandonné',v:filtered.filter(o=>o.stage==='Abandonné').length,c:'c5'},
@@ -1233,14 +1231,14 @@ function renderSocietes(){
     const assignes=[...new Set(s.opps.map(function(o){return o.assigne;}).filter(Boolean))];
 
     // ── Same KPI blocks as Dashboard "Vue d'ensemble" ─────────────────────
-    const concluant=s.opps.filter(function(o){return o.stage==='Concluant';}).length;
+    const concluant=s.opps.filter(function(o){return o.stage==='Opportunité';}).length;
     const acreuser=s.opps.filter(function(o){return o.stage==='\u00c0 creuser';}).length;
     const enVeille=s.opps.filter(function(o){return o.stage==='En veille';}).length;
     const abandonne=s.opps.filter(function(o){return o.stage==='Abandonn\u00e9';}).length;
 
     const kpis=[
       {l:'Pistes',     v:[...s.pistes].length, c:'c1'},
-      {l:'Concluants', v:concluant,             c:'c4'},
+      {l:'Opportunités', v:concluant,             c:'c4'},
       {l:'\u00c0 creuser',  v:acreuser,              c:'c1'},
       {l:'En veille',  v:enVeille,              c:'c3'},
       {l:'Abandonn\u00e9', v:abandonne,             c:'c5'},
@@ -2007,7 +2005,7 @@ function renderStatsEvents(){
         {label:'Présents',data:evts.map(function(e){return participants.filter(function(p){return p.evtnom===e&&p.statut==='Présent';}).length;}),backgroundColor:'#c97a10',borderRadius:3},
         {label:'Pistes',data:evts.map(function(e){return pistes.filter(function(p){return p.evtnom===e;}).length;}),backgroundColor:'#A01864',borderRadius:3},
         {label:'Pipeline',data:evts.map(function(e){return opps.filter(function(o){return o.evtnom===e&&PIPE_STAGES.includes(o.stage);}).length;}),backgroundColor:'#1A7AEA',borderRadius:3},
-        {label:'Concluants',data:evts.map(function(e){return opps.filter(function(o){return o.evtnom===e&&o.stage==='Concluant';}).length;}),backgroundColor:'#1AAE6A',borderRadius:3},
+        {label:'Opportunités',data:evts.map(function(e){return opps.filter(function(o){return o.evtnom===e&&o.stage==='Opportunité';}).length;}),backgroundColor:'#1AAE6A',borderRadius:3},
       ]
     },
     options:{responsive:true,maintainAspectRatio:false,
@@ -2189,10 +2187,10 @@ function renderStatsCrm(){
   destroyChart('funnel-crm');
   const fVals=[participants.length,pistes.length,
     opps.filter(function(o){return PIPE_STAGES.includes(o.stage);}).length,
-    opps.filter(function(o){return o.stage==='Concluant';}).length];
+    opps.filter(function(o){return o.stage==='Opportunité';}).length];
   charts['funnel-crm']=new Chart(document.getElementById('ch-funnel-crm'),{
     type:'bar',
-    data:{labels:['Participants','Pistes','En pipeline','Concluants'],
+    data:{labels:['Participants','Pistes','En pipeline','Opportunités'],
       datasets:[{data:fVals,backgroundColor:['#888780','#c97a10','#A01864','#1AAE6A'],borderRadius:4}]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){
@@ -2235,7 +2233,7 @@ function renderStatsCrm(){
       datasets:[
         {label:'Pistes',data:CL.map(function(c){return pistes.filter(function(p){return p.assigne===c;}).length;}),backgroundColor:'rgba(160,24,100,0.7)',borderRadius:3},
         {label:'Pipeline actif',data:CL.map(function(c){return opps.filter(function(o){return o.assigne===c&&PIPE_STAGES.includes(o.stage);}).length;}),backgroundColor:'rgba(26,122,234,0.7)',borderRadius:3},
-        {label:'Concluants',data:CL.map(function(c){return opps.filter(function(o){return o.assigne===c&&o.stage==='Concluant';}).length;}),backgroundColor:'rgba(26,174,106,0.7)',borderRadius:3},
+        {label:'Opportunités',data:CL.map(function(c){return opps.filter(function(o){return o.assigne===c&&o.stage==='Opportunité';}).length;}),backgroundColor:'rgba(26,174,106,0.7)',borderRadius:3},
       ]
     },
     options:{responsive:true,maintainAspectRatio:false,
@@ -2259,7 +2257,7 @@ function renderStatsCrm(){
         const nbPistes=m.contacts.reduce(function(s,c){return s+(c.piste_ids?c.piste_ids.length:0);},0);
         const concluants=m.contacts.filter(function(c){
           if(!c.piste_ids||!c.piste_ids.length)return false;
-          return c.piste_ids.some(function(pid){return opps.some(function(o){return o.piste_id===pid&&o.stage==='Concluant';});});
+          return c.piste_ids.some(function(pid){return opps.some(function(o){return o.piste_id===pid&&o.stage==='Opportunité';});});
         }).length;
         const txEnv=total>0?Math.round(envoye/total*100)+'%':'—';
         const txRdv=total>0?Math.round(rdv/total*100)+'%':'—';
@@ -2274,7 +2272,7 @@ function renderStatsCrm(){
               +[{l:'Contacts',v:total,c:'var(--txm)'},{l:'Envoyés',v:envoye,c:'#1A7AEA'},
                 {l:'Tx envoi',v:txEnv,c:'#1A7AEA'},{l:'RDV',v:rdv,c:'#1AAE6A'},
                 {l:'Tx RDV',v:txRdv,c:'#1AAE6A'},{l:'Pistes',v:nbPistes,c:'#A01864'},
-                {l:'Concluants',v:concluants,c:'#1AAE6A'},{l:'Tx concluant',v:txConv,c:'#1AAE6A'}]
+                {l:'Opportunités',v:concluants,c:'#1AAE6A'},{l:'Tx opportunité',v:txConv,c:'#1AAE6A'}]
               .map(function(k){
                 return '<div style="display:flex;flex-direction:column;align-items:center;padding:2px 7px;background:var(--bg);border:0.5px solid var(--bl);border-radius:6px;min-width:52px">'
                   +'<div style="font-size:14px;font-weight:600;color:'+k.c+'">'+k.v+'</div>'
@@ -2293,7 +2291,7 @@ function renderStatsCrm(){
     const myP=pistes.filter(function(p){return p.assigne===c;}).length;
     const myO=opps.filter(function(o){return o.assigne===c;});
     const act=myO.filter(function(o){return PIPE_STAGES.includes(o.stage);}).length;
-    const concl=myO.filter(function(o){return o.stage==='Concluant';}).length;
+    const concl=myO.filter(function(o){return o.stage==='Opportunité';}).length;
     const ac=myO.filter(function(o){return o.stage==='À creuser';}).length;
     const vl=myO.filter(function(o){return PIPE_STAGES.includes(o.stage);}).reduce(function(s,o){return s+(parseInt(o.valeur)||0);},0);
     return '<div class="icard" style="border-left:3px solid '+color+';margin-bottom:10px">'
@@ -2302,7 +2300,7 @@ function renderStatsCrm(){
         +'<div style="font-size:14px;font-weight:600;flex:1">'+c+'</div>'
         +'<div style="display:flex;gap:5px;flex-wrap:wrap">'
           +[{l:'Pistes',v:myP,c:'var(--txm)'},{l:'Actifs',v:act,c:color},
-            {l:'Concluants',v:concl,c:'#1AAE6A'},{l:'À creuser',v:ac,c:'#c97a10'},
+            {l:'Opportunités',v:concl,c:'#1AAE6A'},{l:'À creuser',v:ac,c:'#c97a10'},
             ...(vl>0?[{l:'Pipeline Ar',v:vl.toLocaleString('fr-FR'),c:'#7A1AEA'}]:[])
           ].map(function(k){
             return '<div style="display:flex;flex-direction:column;align-items:center;padding:2px 8px;background:var(--bg);border:0.5px solid var(--bl);border-radius:6px;min-width:56px">'
@@ -3177,8 +3175,8 @@ document.addEventListener('click',function(e){
     </div>
     <div id="termine-piste-info" style="background:var(--bg2);border-radius:var(--rm);padding:10px 12px;margin-bottom:1.25rem;font-size:13px"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem">
-      <button class="btn-terme" data-stage="Concluant" style="padding:14px;border-radius:var(--rm);border:1.5px solid #1AAE6A;background:transparent;color:#1AAE6A;font-size:13px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px">
-        <i class="ti ti-check" style="font-size:20px"></i>Concluant
+      <button class="btn-terme" data-stage="Opportunité" style="padding:14px;border-radius:var(--rm);border:1.5px solid #1AAE6A;background:transparent;color:#1AAE6A;font-size:13px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px">
+        <i class="ti ti-check" style="font-size:20px"></i>Opportunité
       </button>
       <button class="btn-terme" data-stage="À creuser" style="padding:14px;border-radius:var(--rm);border:1.5px solid #c97a10;background:transparent;color:#c97a10;font-size:13px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px">
         <i class="ti ti-zoom-question" style="font-size:20px"></i>À creuser
