@@ -2753,14 +2753,22 @@ function renderMailing(){
                     +'</select>'
                   +'</div>'
                 +'</td>'
-                +'<td style="padding:5px 8px;white-space:nowrap" onclick="event.stopPropagation()">'
-                  +'<div style="display:flex;align-items:center;gap:3px">'
-                    +campActionTag(mailAction)
-                    +(mailAction==='Envoi brochure'
-                      ?'<button class="abtn" data-action="validateMailingAction" data-mid="'+m.id+'" data-cid="'+c.id+'" title="Marquer comme fait" style="padding:1px 3px;opacity:0.55"><i class="ti ti-circle-check" style="font-size:13px;pointer-events:none"></i></button>'
-                      :'')
-                  +'</div>'
-                +'</td>'
+                +(function(){
+                  var validated=(c.actionValidated==='Envoi brochure');
+                  var showBtn=(mailAction==='Envoi brochure'||validated);
+                  return '<td style="padding:5px 8px;white-space:nowrap" onclick="event.stopPropagation()">'
+                    +'<div style="display:flex;align-items:center;gap:3px">'
+                      +(validated
+                        ?'<span style="font-size:11px;font-weight:600;color:#1AAE6A;opacity:0.85;text-decoration:line-through">Envoi brochure</span>'
+                        :campActionTag(mailAction))
+                      +(showBtn
+                        ?'<button class="abtn" data-action="validateMailingAction" data-mid="'+m.id+'" data-cid="'+c.id+'" title="'+(validated?'Brochure envoyée — cliquer pour annuler':'Marquer comme envoyée')+'" style="padding:1px 3px;color:'+(validated?'#1AAE6A':'var(--tx2)')+';opacity:'+(validated?'1':'0.55')+'">'
+                          +'<i class="ti ti-circle-check" style="font-size:13px;pointer-events:none"></i>'
+                          +'</button>'
+                        :'')
+                    +'</div>'
+                  +'</td>';
+                })()
                 +(function(){
                   var rdvEnabled=(c.statut==='RDV planifié'||c.statut==='RDV effectué');
                   var rdvDate=c.rdvDate||'';
