@@ -2726,7 +2726,6 @@ function renderMailing(){
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:16%">Nom</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:14%">Société</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:14%">Email</th>'
-            +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:9%">Date envoi</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:9%">Assigné</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:11%">Statut</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Action</th>'
@@ -2744,9 +2743,6 @@ function renderMailing(){
                 +'<td style="padding:7px 8px;font-weight:500">'+c.nom+'</td>'
                 +'<td style="padding:7px 8px;color:var(--tx2)">'+c.societe+'</td>'
                 +'<td style="padding:7px 8px;font-size:11px;color:var(--txm)">'+(c.email||'—')+'</td>'
-                +'<td style="padding:7px 8px;font-size:11px;color:var(--txm)">'
-                  +(c.dateEnvoi?new Date(c.dateEnvoi+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}):'<span style="opacity:0.35">—</span>')
-                +'</td>'
                 +'<td style="padding:7px 8px;font-size:11px;font-weight:600;color:'+commColor+'">'+(c.assigne||'<span style="opacity:0.35;font-weight:400">—</span>')+'</td>'
                 +'<td style="padding:7px 8px" onclick="event.stopPropagation()">'
                   +'<div style="position:relative;display:inline-block">'
@@ -2760,7 +2756,7 @@ function renderMailing(){
                 +'<td style="padding:5px 8px;white-space:nowrap" onclick="event.stopPropagation()">'
                   +'<div style="display:flex;align-items:center;gap:3px">'
                     +campActionTag(mailAction)
-                    +(mailAction&&mailAction!=='—'
+                    +(mailAction==='Envoi brochure'
                       ?'<button class="abtn" data-action="validateMailingAction" data-mid="'+m.id+'" data-cid="'+c.id+'" title="Marquer comme fait" style="padding:1px 3px;opacity:0.55"><i class="ti ti-circle-check" style="font-size:13px;pointer-events:none"></i></button>'
                       :'')
                   +'</div>'
