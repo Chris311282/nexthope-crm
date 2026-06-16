@@ -9,6 +9,7 @@
 <script>
 var firebaseConfig={apiKey:"AIzaSyAh5L4AfdA2AiKw_TPigeOZnKHcbMAfSPY",authDomain:"nexthope-crm.firebaseapp.com",databaseURL:"https://nexthope-crm-default-rtdb.firebaseio.com",projectId:"nexthope-crm",storageBucket:"nexthope-crm.firebasestorage.app",messagingSenderId:"1081760615967",appId:"1:1081760615967:web:f1fec063dad47064560f2a"};
 var db=null,auth=null,currentUser=null,fbListenerOn=false,fbSyncing=false;
+var _pendingMailValidations=new Map(),_pendingEvtValidations=new Map();
 </script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -731,9 +732,29 @@ function startRealtimeSync(){
     _deletedEvts.forEach(function(k){delete newEvtData[k];});
     evtData=newEvtData;
     participants=toArr(d.participants).filter(function(p){return!_deletedEvts.has(p.evtnom||'');});
+    if(_pendingEvtValidations.size>0){
+      participants.forEach(function(p){
+        if(_pendingEvtValidations.has(p.id)){
+          var pv=_pendingEvtValidations.get(p.id);
+          if(p.actionValidated===pv)_pendingEvtValidations.delete(p.id);
+          else p.actionValidated=pv;
+        }
+      });
+    }
     pistes=toArr(d.pistes);
     opps=toArr(d.opps);
     mailings=toArr(d.mailings);
+    if(_pendingMailValidations.size>0){
+      mailings.forEach(function(m){
+        (m.contacts||[]).forEach(function(c){
+          if(_pendingMailValidations.has(c.id)){
+            var mv=_pendingMailValidations.get(c.id);
+            if(c.actionValidated===mv)_pendingMailValidations.delete(c.id);
+            else c.actionValidated=mv;
+          }
+        });
+      });
+    }
     try{localStorage.setItem('nh_crm_bak',JSON.stringify({participants:participants,pistes:pistes,opps:opps,mailings:mailings,evtData:evtData}));}catch(e){}
     refreshTab();
   });
@@ -2484,13 +2505,13 @@ document.addEventListener('click',function(e){
   else if(act==='importEvtCSV'){e.stopPropagation();openImportEvtCSV(id);}
   else if(act==='validateEvtAction'){e.stopPropagation();
     var _p=participants.find(function(x){return x.id===id;});
-    if(_p){_p.actionValidated=getEvtAction(_p);persist();renderEvents();}
+    if(_p){var _ev=getEvtAction(_p);_p.actionValidated=_ev;_pendingEvtValidations.set(_p.id,_ev);persist();renderEvents();}
   }
   else if(act==='validateMailingAction'){e.stopPropagation();
     var _mid=btn.getAttribute('data-mid'),_cid=btn.getAttribute('data-cid');
     var _m=mailings.find(function(x){return x.id===_mid;});
     if(_m){var _c=_m.contacts.find(function(x){return x.id===_cid;});
-      if(_c){_c.actionValidated=getMailAction(_c);persist();renderMailing();}
+      if(_c){var _mv=getMailAction(_c);_c.actionValidated=_mv;_pendingMailValidations.set(_cid,_mv);persist();renderMailing();}
     }
   }
   else if(act==='importMailingCSV'){e.stopPropagation();openImportMailingCSV(id);}
