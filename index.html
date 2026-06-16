@@ -1800,6 +1800,18 @@ function campActionTag(action){
     ?'<span style="font-size:11px;color:var(--txm)">—</span>'
     :'<span style="font-size:11px;font-weight:600;color:'+c+'">→ '+action+'</span>';
 }
+function handleValidateMailAction(e,mid,cid){
+  e.stopPropagation();
+  var _m=mailings.find(function(x){return x.id===mid;});
+  if(!_m)return;
+  var _c=_m.contacts.find(function(x){return x.id===cid;});
+  if(_c){var _mv=getMailAction(_c);_c.actionValidated=_mv;_pendingMailValidations.set(cid,_mv);persist();renderMailing();}
+}
+function handleValidateEvtAction(e,pid){
+  e.stopPropagation();
+  var _p=participants.find(function(x){return x.id===pid;});
+  if(_p){var _ev=getEvtAction(_p);_p.actionValidated=_ev;_pendingEvtValidations.set(pid,_ev);persist();renderEvents();}
+}
 function getMailAction(c){
   var statut=c.statut||'Non envoyé';
   var action;
@@ -1959,7 +1971,7 @@ function renderEvents(){
           +'<div style="display:flex;align-items:center;gap:3px">'
             +campActionTag(evtAction)
             +(evtAction&&evtAction!=='—'
-              ?'<button class="abtn" data-action="validateEvtAction" data-id="'+p.id+'" title="Marquer comme fait" style="padding:1px 3px;opacity:0.55"><i class="ti ti-circle-check" style="font-size:13px;pointer-events:none"></i></button>'
+              ?'<button class="abtn" onclick="handleValidateEvtAction(event,\''+p.id+'\')" title="Marquer comme fait" style="padding:1px 3px;opacity:0.55"><i class="ti ti-circle-check" style="font-size:13px;pointer-events:none"></i></button>'
               :'')
           +'</div>'
         +'</td>'
@@ -2783,7 +2795,7 @@ function renderMailing(){
                         ?'<span style="font-size:11px;font-weight:600;color:#1AAE6A;opacity:0.85;text-decoration:line-through">Envoi brochure</span>'
                         :campActionTag(mailAction))
                       +(showBtn
-                        ?'<button class="abtn" data-action="validateMailingAction" data-mid="'+m.id+'" data-cid="'+c.id+'" title="'+(validated?'Brochure envoyée — cliquer pour annuler':'Marquer comme envoyée')+'" style="padding:1px 3px;color:'+(validated?'#1AAE6A':'var(--tx2)')+';opacity:'+(validated?'1':'0.55')+'">'
+                        ?'<button class="abtn" onclick="handleValidateMailAction(event,\''+m.id+'\',\''+c.id+'\')" title="'+(validated?'Brochure envoyée — cliquer pour annuler':'Marquer comme envoyée')+'" style="padding:1px 3px;color:'+(validated?'#1AAE6A':'var(--tx2)')+';opacity:'+(validated?'1':'0.55')+'">'
                           +'<i class="ti ti-circle-check" style="font-size:13px;pointer-events:none"></i>'
                           +'</button>'
                         :'')
