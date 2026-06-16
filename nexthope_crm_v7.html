@@ -2792,7 +2792,7 @@ function renderMailing(){
                   return '<td style="padding:5px 8px;white-space:nowrap" onclick="event.stopPropagation()">'
                     +'<div style="display:flex;align-items:center;gap:3px">'
                       +(validated
-                        ?'<span style="font-size:11px;font-weight:600;color:#1AAE6A;opacity:0.85;text-decoration:line-through">Envoi brochure</span>'
+                        ?'<span style="font-size:11px;font-weight:600;color:#1AAE6A">→ Envoi brochure</span>'
                         :campActionTag(mailAction))
                       +(showBtn
                         ?'<button class="abtn" onclick="handleValidateMailAction(event,\''+m.id+'\',\''+c.id+'\')" title="'+(validated?'Brochure envoyée — cliquer pour annuler':'Marquer comme envoyée')+'" style="padding:1px 3px;color:'+(validated?'#1AAE6A':'var(--tx2)')+';opacity:'+(validated?'1':'0.55')+'">'
