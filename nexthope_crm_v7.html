@@ -1912,7 +1912,15 @@ function renderEvents(){
         +'<td style="padding:7px 8px;font-size:12px;font-weight:500">'+p.nom+'</td>'
         +'<td style="padding:7px 8px;font-size:12px;color:var(--tx2)">'+p.societe+'</td>'
         +'<td style="padding:7px 8px;font-size:11px;color:var(--txm)">'+(p.email||'—')+'</td>'
-        +'<td style="padding:7px 8px;font-size:11px;font-weight:600;color:'+(CCOLORS[COMMS.indexOf(p.assigne)]||'var(--txm)')+'">'+(p.assigne||'<span style="opacity:0.35;font-weight:400">—</span>')+'</td>'
+        +'<td style="padding:7px 8px" onclick="event.stopPropagation()">'
+          +'<div style="position:relative;display:inline-block">'
+            +'<span style="font-size:11px;font-weight:600;color:'+(CCOLORS[COMMS.indexOf(p.assigne)]||'var(--txm)')+';pointer-events:none;white-space:nowrap">'+(p.assigne||'<span style="opacity:0.35;font-weight:400">—</span>')+'</span>'
+            +'<select style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:11px" data-action="updateParticipantAssigne" data-pid="'+p.id+'">'
+              +'<option value=""'+(p.assigne?'':' selected')+'>—</option>'
+              +COMMS.map(function(s){return'<option value="'+s+'"'+(p.assigne===s?' selected':'')+'>'+s+'</option>';}).join('')
+            +'</select>'
+          +'</div>'
+        +'</td>'
         // Statut avant évènement
         +'<td style="padding:7px 8px" onclick="event.stopPropagation()">'
           +'<div style="position:relative;display:inline-block">'
@@ -2545,6 +2553,11 @@ document.addEventListener('change',function(e){
   if(e.target.id==='o-piste')onPisteChange();
   if(e.target.id==='o-stage')updateActionList('o-action','o-stage');
   // Participant statut update
+  if(e.target.getAttribute('data-action')==='updateParticipantAssigne'){
+    const pid=e.target.getAttribute('data-pid');
+    const p=participants.find(function(x){return x.id===pid;});
+    if(p){p.assigne=e.target.value||null;persist();renderEvents();}
+  }
   if(e.target.getAttribute('data-action')==='updateParticipantStatut'){
     const pid=e.target.getAttribute('data-pid');
     const p=participants.find(function(x){return x.id===pid;});
@@ -2769,7 +2782,15 @@ function renderMailing(){
                 +'<td style="padding:7px 8px;font-weight:500">'+c.nom+'</td>'
                 +'<td style="padding:7px 8px;color:var(--tx2)">'+c.societe+'</td>'
                 +'<td style="padding:7px 8px;font-size:11px;color:var(--txm)">'+(c.email||'—')+'</td>'
-                +'<td style="padding:7px 8px;font-size:11px;font-weight:600;color:'+commColor+'">'+(c.assigne||'<span style="opacity:0.35;font-weight:400">—</span>')+'</td>'
+                +'<td style="padding:7px 8px" onclick="event.stopPropagation()">'
+                  +'<div style="position:relative;display:inline-block">'
+                    +'<span style="font-size:11px;font-weight:600;color:'+commColor+';pointer-events:none;white-space:nowrap">'+(c.assigne||'<span style="opacity:0.35;font-weight:400">—</span>')+'</span>'
+                    +'<select style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:11px" data-action="updateMailingAssigne" data-mailing-id="'+m.id+'" data-contact-id="'+c.id+'">'
+                      +'<option value=""'+(c.assigne?'':' selected')+'>—</option>'
+                      +COMMS.map(function(s){return'<option value="'+s+'"'+(c.assigne===s?' selected':'')+'>'+s+'</option>';}).join('')
+                    +'</select>'
+                  +'</div>'
+                +'</td>'
                 +'<td style="padding:7px 8px" onclick="event.stopPropagation()">'
                   +'<div style="position:relative;display:inline-block">'
                     +'<span class="badge '+(MAIL_STATUS_BADGE[c.statut||'Non envoyé']||'b-mailing')+'" style="font-size:11px;padding:2px 8px;pointer-events:none;white-space:nowrap">'+(c.statut||'Non envoyé')+'</span>'
@@ -3058,6 +3079,14 @@ document.addEventListener('change',function(e){
     reader.readAsText(file,'UTF-8');
   }
   // Status update
+  if(e.target.getAttribute('data-action')==='updateMailingAssigne'){
+    const mid=e.target.getAttribute('data-mailing-id');
+    const cid=e.target.getAttribute('data-contact-id');
+    const m=mailings.find(function(x){return x.id===mid;});
+    if(!m)return;
+    const c=m.contacts.find(function(x){return x.id===cid;});
+    if(c){c.assigne=e.target.value||null;persist();renderMailing();}
+  }
   if(e.target.getAttribute('data-action')==='updateMailingStatus'){
     const mid=e.target.getAttribute('data-mailing-id');
     const cid=e.target.getAttribute('data-contact-id');
