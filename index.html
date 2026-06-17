@@ -2091,7 +2091,7 @@ function renderEvents(){
           +campActionRecap(evtParticipants,getEvtAction)
         +'</div>'
         +commStatsHTML(evtParticipants,getEvtAction,'participant')
-        +'<div style="overflow-x:auto"><table style="width:950px;border-collapse:collapse">'
+        +'<div style="overflow-x:auto"><table style="width:max-content;min-width:100%;border-collapse:collapse;table-layout:auto">'
           +'<thead><tr>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Nom</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl)">Société</th>'
@@ -2794,7 +2794,7 @@ function renderMailing(){
           +'<span style="font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.04em;margin-right:4px">Actions :</span>'
           +campActionRecap(displayC,getMailAction)
         +'</div>'
-        +'<div id="mltbl_'+m.id+'" style="overflow-x:auto"><table style="width:850px;border-collapse:collapse;font-size:12px">'
+        +'<div id="mltbl_'+m.id+'" style="overflow-x:auto"><table style="width:max-content;min-width:100%;border-collapse:collapse;font-size:12px;table-layout:auto">'
           +'<thead><tr>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:16%">Nom</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:14%">Société</th>'
