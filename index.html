@@ -960,11 +960,14 @@ function renderDash(){
   PIPE_STAGES.forEach(s=>bs[s]=filtered.filter(o=>o.stage===s));
   bs['Terminé']=filtered.filter(o=>TERM_STAGES.includes(o.stage));
 
+  // Pistes sans opportunité associée → s'affichent dans "Analyse besoin"
+  const pistesWithoutOpp=filtPistes.filter(p=>!opps.some(o=>o.piste_id===p.id));
+
   const pipeEl=document.getElementById('dash-pipe');
   pipeEl.innerHTML=DISPLAY_STAGES.map(s=>{
     const list=bs[s]||[];
     const color=PIPE_COLORS[s]||'#444';
-    const cards=list.map(o=>{
+    const oppCards=list.map(o=>{
       const p=getPiste(o.piste_id);
       const isTermine=TERM_STAGES.includes(o.stage);
       const termColor=TERM_COLORS[o.stage]||'#888';
@@ -977,9 +980,19 @@ function renderDash(){
         +(o.solution?'<div style="font-size:10px;color:var(--ac);margin-top:1px">'+o.solution+'</div>':'')
         +subLine
         +'</div>';
-    }).join('')+(list.length===0?'<div style="font-size:10px;color:var(--txm)">—</div>':'');
+    }).join('');
+    const pisteCards=s==='Analyse besoin'?pistesWithoutOpp.map(lp=>{
+      return'<div class="pccard" style="cursor:pointer" data-action="openEditPiste" data-id="'+lp.id+'">'
+        +'<span class="badge b-piste" style="font-size:9px;padding:1px 5px;margin-bottom:3px;display:inline-block">Piste</span>'
+        +'<strong style="font-size:11px;display:block">'+lp.nom+'</strong>'
+        +'<div style="font-size:10px;color:var(--tx2)">'+lp.societe+'</div>'
+        +(lp.solution?'<div style="font-size:10px;color:var(--ac);margin-top:1px">'+lp.solution+'</div>':'')
+        +'</div>';
+    }).join(''):'';
+    const total=list.length+(s==='Analyse besoin'?pistesWithoutOpp.length:0);
+    const cards=oppCards+pisteCards+(total===0?'<div style="font-size:10px;color:var(--txm)">—</div>':'');
     return'<div class="pcol" data-stage="'+s+'" style="border-left:3px solid '+color+'">'
-      +'<div class="pchd"><span>'+s+'</span><span class="pccnt">'+list.length+'</span></div>'
+      +'<div class="pchd"><span>'+s+'</span><span class="pccnt">'+total+'</span></div>'
       +cards
       +'</div>';
   }).join('');
