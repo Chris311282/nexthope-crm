@@ -935,6 +935,7 @@ function renderDash(){
     ?participants.filter(p=>(p.piste_ids||[]).some(pid=>pistes.some(l=>l.id===pid&&l.assigne===comm)))
     :participants;
   const filtPistes=comm?pistes.filter(l=>l.assigne===comm):pistes;
+  const pistesWithoutOpp=filtPistes.filter(p=>!opps.some(o=>o.piste_id===p.id));
 
   const inPipe=filtered.filter(o=>PIPE_STAGES.includes(o.stage));
   const concluant=filtered.filter(o=>o.stage==='Opportunité').length;
@@ -947,7 +948,7 @@ function renderDash(){
 
   // KPIs
   document.getElementById('dash-metrics').innerHTML=[
-    {l:'Pistes',v:filtPistes.length,c:'c1'},
+    {l:'Pistes',v:pistesWithoutOpp.length,c:'c1'},
     {l:'Opportunités',v:concluant,c:'c4'},
     {l:'À creuser',v:filtered.filter(o=>o.stage==='À creuser').length,c:'c1'},
     {l:'En veille',v:filtered.filter(o=>o.stage==='En veille').length,c:'c3'},
@@ -959,9 +960,6 @@ function renderDash(){
   const bs={};
   PIPE_STAGES.forEach(s=>bs[s]=filtered.filter(o=>o.stage===s));
   bs['Terminé']=filtered.filter(o=>TERM_STAGES.includes(o.stage));
-
-  // Pistes sans opportunité associée → s'affichent dans "Analyse besoin"
-  const pistesWithoutOpp=filtPistes.filter(p=>!opps.some(o=>o.piste_id===p.id));
 
   const pipeEl=document.getElementById('dash-pipe');
   pipeEl.innerHTML=DISPLAY_STAGES.map(s=>{
