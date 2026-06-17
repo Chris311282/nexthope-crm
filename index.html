@@ -2800,8 +2800,8 @@ function renderMailing(){
               const commColor=commIdx>=0?CCOLORS[commIdx]:'var(--txm)';
               return '<tr style="cursor:pointer" data-action="editMailingContact" data-mailing-id="'+m.id+'" data-contact-id="'+c.id+'" title="Cliquer pour modifier">'
                 +'<td style="padding:7px 8px;font-weight:500">'+c.nom+'</td>'
-                +'<td style="padding:7px 8px;color:var(--tx2)">'+c.societe+'</td>'
-                +'<td style="padding:7px 8px;font-size:11px;color:var(--txm)">'+(c.email||'—')+'</td>'
+                +'<td style="padding:7px 8px;color:var(--tx2);max-width:110px">'+c.societe+'</td>'
+                +'<td style="padding:7px 8px;font-size:11px;color:var(--txm);max-width:130px">'+(c.email||'—')+'</td>'
                 +'<td style="padding:7px 8px" onclick="event.stopPropagation()">'
                   +'<div style="position:relative;display:inline-block">'
                     +'<span style="font-size:11px;font-weight:600;color:'+commColor+';pointer-events:none;white-space:nowrap">'+(c.assigne||'<span style="opacity:0.35;font-weight:400">—</span>')+'</span>'
