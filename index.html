@@ -2747,7 +2747,7 @@ function renderMailing(){
         +'<div style="flex:1;min-width:0">'
           +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
             +'<i class="ti ti-mail" style="color:var(--ac);font-size:14px;flex-shrink:0"></i>'
-            +'<span id="mlname_'+m.id+'" style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+m.nom+'</span>'
+            +'<span id="mlname_'+m.id+'" style="font-size:14px;font-weight:600">'+m.nom+'</span>'
             +'<button class="abtn" onclick="startRenameMailing(event,\''+m.id+'\')" title="Renommer la campagne" style="padding:2px 4px;flex-shrink:0;opacity:0.5"><i class="ti ti-pencil" style="font-size:12px;pointer-events:none"></i></button>'
             +(m.assigne?'<span style="font-size:11px;color:#1AAE6A;flex-shrink:0">· '+m.assigne+'</span>':'')
             +(m.date?'<span style="font-size:11px;color:var(--tx2);flex-shrink:0"><i class="ti ti-calendar" style="font-size:10px;margin-right:3px"></i>'+new Date(m.date+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})+'</span>':'')
@@ -2859,7 +2859,7 @@ function renderMailing(){
                 })()
                 +'<td style="padding:7px 8px;text-align:right;white-space:nowrap">'
                   +(hasPiste?'<span class="badge b-ouvert" style="font-size:10px;margin-right:5px">'+pisteCntM+' piste'+(pisteCntM>1?'s':'')+'</span>':'')
-                  +(c.statut==='RDV effectué'
+                  +((c.statut==='RDV effectué'||c.statut==='RDV planifié')
                     ?'<button class="btn-piste" style="font-size:11px;padding:4px 8px" data-action="mailingToPiste" data-mailing-id="'+m.id+'" data-contact-id="'+c.id+'">+ Piste</button>'
                     :'')
                   +'<button class="abtn" data-action="delMailingContact" data-mailing-id="'+m.id+'" data-contact-id="'+c.id+'" style="padding:2px 4px;margin-left:4px"><i class="ti ti-trash" style="font-size:12px"></i></button>'
