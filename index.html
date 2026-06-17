@@ -980,8 +980,11 @@ function renderDash(){
         +'</div>';
     }).join('');
     const pisteCards=s==='Analyse besoin'?pistesWithoutOpp.map(lp=>{
-      return'<div class="pccard" style="cursor:pointer" data-action="openEditPiste" data-id="'+lp.id+'">'
-        +'<span class="badge b-piste" style="font-size:9px;padding:1px 5px;margin-bottom:3px;display:inline-block">Piste</span>'
+      return'<div class="pccard" style="cursor:pointer;position:relative" data-action="openEditPiste" data-id="'+lp.id+'">'
+        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px">'
+          +'<span class="badge b-piste" style="font-size:9px;padding:1px 5px;margin-bottom:3px;display:inline-block">Piste</span>'
+          +'<button class="abtn" onclick="event.stopPropagation();delPiste(\''+lp.id+'\')" title="Supprimer" style="padding:1px 3px;margin-top:-2px;flex-shrink:0"><i class="ti ti-trash" style="font-size:11px;pointer-events:none"></i></button>'
+        +'</div>'
         +'<strong style="font-size:11px;display:block">'+lp.nom+'</strong>'
         +'<div style="font-size:10px;color:var(--tx2)">'+lp.societe+'</div>'
         +(lp.solution?'<div style="font-size:10px;color:var(--ac);margin-top:1px">'+lp.solution+'</div>':'')
