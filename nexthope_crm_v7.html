@@ -2693,9 +2693,28 @@ function renderMailingCommBar(){
   el.innerHTML=html;
 }
 
+function startRenameMailing(e,mid){
+  e.stopPropagation();
+  var m=mailings.find(function(x){return x.id===mid;});
+  if(!m)return;
+  var span=document.getElementById('mlname_'+mid);
+  if(!span)return;
+  var inp=document.createElement('input');
+  inp.value=m.nom;
+  inp.style.cssText='font-size:14px;font-weight:600;border:none;outline:none;background:transparent;border-bottom:1.5px solid var(--ac);color:var(--tx);min-width:120px;width:'+(span.offsetWidth||200)+'px;max-width:320px;';
+  span.replaceWith(inp);inp.focus();inp.select();
+  function save(){var v=inp.value.trim();if(v&&v!==m.nom){m.nom=v;persist();}renderMailing();}
+  inp.addEventListener('blur',save);
+  inp.addEventListener('keydown',function(ev){
+    if(ev.key==='Enter'){ev.preventDefault();inp.removeEventListener('blur',save);save();}
+    if(ev.key==='Escape'){ev.preventDefault();inp.removeEventListener('blur',save);renderMailing();}
+  });
+}
 function renderMailing(){
   renderMailingCommBar();
   var openMl=_saveOpen('ml_m_');
+  var scrollPos={};
+  Object.keys(openMl).forEach(function(sid){var t=document.getElementById('mltbl_'+sid.replace('ml_',''));if(t)scrollPos[sid]=t.scrollLeft;});
   const el=document.getElementById('mailing-list');
   const em=document.getElementById('mailing-empty');
   if(!el)return;
@@ -2728,7 +2747,8 @@ function renderMailing(){
         +'<div style="flex:1;min-width:0">'
           +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
             +'<i class="ti ti-mail" style="color:var(--ac);font-size:14px;flex-shrink:0"></i>'
-            +'<span style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+m.nom+'</span>'
+            +'<span id="mlname_'+m.id+'" style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+m.nom+'</span>'
+            +'<button class="abtn" onclick="startRenameMailing(event,\''+m.id+'\')" title="Renommer la campagne" style="padding:2px 4px;flex-shrink:0;opacity:0.5"><i class="ti ti-pencil" style="font-size:12px;pointer-events:none"></i></button>'
             +(m.assigne?'<span style="font-size:11px;color:#1AAE6A;flex-shrink:0">· '+m.assigne+'</span>':'')
             +(m.date?'<span style="font-size:11px;color:var(--tx2);flex-shrink:0"><i class="ti ti-calendar" style="font-size:10px;margin-right:3px"></i>'+new Date(m.date+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})+'</span>':'')
           +'</div>'
@@ -2760,7 +2780,7 @@ function renderMailing(){
           +'<span style="font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.04em;margin-right:4px">Actions :</span>'
           +campActionRecap(displayC,getMailAction)
         +'</div>'
-        +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
+        +'<div id="mltbl_'+m.id+'" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
           +'<thead><tr>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:16%">Nom</th>'
             +'<th style="text-align:left;padding:6px 8px;font-size:11px;color:var(--tx2);border-bottom:0.5px solid var(--bl);width:14%">Société</th>'
@@ -2852,6 +2872,7 @@ function renderMailing(){
     el.appendChild(card);
   });
   _restoreOpen(openMl);
+  Object.keys(scrollPos).forEach(function(sid){var t=document.getElementById('mltbl_'+sid.replace('ml_',''));if(t)t.scrollLeft=scrollPos[sid];});
 }
 
 function openAddMailingModal(){
