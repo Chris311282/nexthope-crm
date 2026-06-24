@@ -999,16 +999,14 @@ function renderDash(){
 
   function mkCard(lp){
     const isTermine=TERM_STAGES.includes(lp.stage);
-    const hasStage=!!lp.stage;
     const stageColor=PIPE_COLORS[lp.stage]||'#444';
     const termColor=TERM_COLORS[lp.stage]||'#888';
     const subLine=isTermine
       ?'<div style="font-size:10px;font-weight:600;color:'+termColor+';margin-top:2px">◉ '+lp.stage+'</div>'
       :(lp.next_action?'<div style="font-size:10px;color:'+stageColor+';margin-top:2px">→ '+lp.next_action+'</div>':'');
-    const badge=!hasStage?'<span class="badge b-piste" style="font-size:9px;padding:1px 5px;margin-bottom:3px;display:inline-block">Piste</span>':'';
-    return'<div class="pccard" draggable="'+hasStage+'" data-piste-id="'+lp.id+'" data-action="editPisteInPipe" data-id="'+lp.id+'" style="position:relative">'
+    return'<div class="pccard" draggable="true" data-piste-id="'+lp.id+'" data-action="editPisteInPipe" data-id="'+lp.id+'" style="position:relative">'
       +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px">'
-        +'<div style="flex:1">'+badge
+        +'<div style="flex:1">'
           +'<strong style="font-size:11px;display:block">'+lp.nom+'</strong>'
           +'<div style="font-size:10px;color:var(--tx2)">'+lp.societe+'</div>'
           +(lp.solution?'<div style="font-size:10px;color:var(--ac);margin-top:1px">'+lp.solution+'</div>':'')
