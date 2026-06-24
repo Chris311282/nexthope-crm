@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -756,7 +756,7 @@ function startRealtimeSync(){
       });
     }
     try{localStorage.setItem('nh_crm_bak',JSON.stringify({participants:participants,pistes:pistes,opps:opps,mailings:mailings,evtData:evtData}));}catch(e){}
-    refreshTab();
+    applyNorm(); refreshTab();
   });
 }
 
@@ -781,12 +781,50 @@ function applyNorm(){
   pistes.forEach(function(p){p.societe=ns(p.societe);if(p.evtnom&&p.evtnom.startsWith('Mailing')){p.source=p.source||p.evtnom;p.evtnom='';}});
   opps.forEach(function(o){o.societe=ns(o.societe);});
   mailings.forEach(function(m){if(!m.contacts)m.contacts=[];m.contacts.forEach(function(c){c.societe=ns(c.societe);});});
+  // Migrer l'ancien format piste_id→piste_ids et supprimer les IDs orphelins
+  var pisteIdSet=new Set(pistes.map(function(p){return p.id;}));
+  participants.forEach(function(p){
+    if(p.piste_id&&!p.piste_ids){p.piste_ids=[p.piste_id];delete p.piste_id;}
+    if(!p.piste_ids)p.piste_ids=[];
+    p.piste_ids=p.piste_ids.filter(function(pid){return pisteIdSet.has(pid);});
+  });
+  mailings.forEach(function(m){(m.contacts||[]).forEach(function(c){
+    if(c.piste_id&&!c.piste_ids){c.piste_ids=[c.piste_id];delete c.piste_id;}
+    if(!c.piste_ids)c.piste_ids=[];
+    c.piste_ids=c.piste_ids.filter(function(pid){return pisteIdSet.has(pid);});
+  });});
   Object.keys(evtData).forEach(function(k){if(k.startsWith('Mailing'))delete evtData[k];});
   Object.keys(EVT_DEF).forEach(function(k){if(!evtData[k])evtData[k]=Object.assign({},EVT_DEF[k]);});
   getEvtNames().forEach(function(k){
     if(!evtData[k])evtData[k]={invites:0,presents:0,cout:0,date:'',lieu:'',goodies:''};
     ['date','lieu','goodies'].forEach(function(f){if(evtData[k][f]===undefined)evtData[k][f]='';});
   });
+  // Migrate opps → piste.stage (one-time, idempotent)
+  opps.forEach(function(o){
+    var p=pistes.find(function(lp){return lp.id===o.piste_id;});
+    if(p){
+      if(!p.stage){
+        p.stage=o.stage;
+        if(o.valeur)p.valeur=o.valeur;
+        if(o.next_action)p.next_action=o.next_action;
+        if(o.reldate)p.reldate=o.reldate;
+        if(o.urgence)p.urgence=o.urgence;
+      }
+    } else {
+      // Orphan opp without a piste → create minimal piste
+      pistes.unshift({
+        id:'l_'+uid(),
+        nom:o.societe||'(inconnu)',societe:o.societe||'',
+        poste:'',email:'',tel:'',
+        evtnom:o.evtnom||'',solution:o.solution||'',
+        assigne:o.assigne||'',notes:o.notes||'',
+        created:o.created||new Date().toISOString(),
+        stage:o.stage,valeur:o.valeur||0,
+        next_action:o.next_action||'',reldate:o.reldate||'',urgence:o.urgence||'vert'
+      });
+    }
+  });
+  opps=[];
 }
 
 function refreshTab(){
@@ -930,68 +968,66 @@ function go(t){
 // ── DASHBOARD ──────────────────────────────────────────────────────────────
 function renderDash(){
   const comm=(document.getElementById('dash-comm')||{value:''}).value;
-  const filtered=comm?opps.filter(o=>o.assigne===comm):opps;
   const filtParts=comm
     ?participants.filter(p=>(p.piste_ids||[]).some(pid=>pistes.some(l=>l.id===pid&&l.assigne===comm)))
     :participants;
   const filtPistes=comm?pistes.filter(l=>l.assigne===comm):pistes;
-  const pistesWithoutOpp=filtPistes.filter(p=>!opps.some(o=>o.piste_id===p.id));
+  const pistesWithoutStage=filtPistes.filter(p=>!p.stage);
+  const inPipe=filtPistes.filter(p=>PIPE_STAGES.includes(p.stage));
 
-  const inPipe=filtered.filter(o=>PIPE_STAGES.includes(o.stage));
-  const concluant=filtered.filter(o=>o.stage==='Opportunité').length;
-  const valPipeline=inPipe.reduce((s,o)=>s+(parseInt(o.valeur)||0),0);
+  const concluant=filtPistes.filter(p=>p.stage==='Opportunité').length;
+  const valPipeline=inPipe.reduce((s,p)=>s+(parseInt(p.valeur)||0),0);
   const today=new Date();today.setHours(0,0,0,0);
-  const enRetard=filtered.filter(o=>{
-    if(!o.reldate||!PIPE_STAGES.includes(o.stage))return false;
-    return new Date(o.reldate+'T00:00:00')<today;
+  const enRetard=inPipe.filter(p=>{
+    if(!p.reldate)return false;
+    return new Date(p.reldate+'T00:00:00')<today;
   }).length;
 
   // KPIs
   document.getElementById('dash-metrics').innerHTML=[
-    {l:'Pistes',v:pistesWithoutOpp.length,c:'c1'},
+    {l:'Pistes',v:pistesWithoutStage.length,c:'c1'},
     {l:'Opportunités',v:concluant,c:'c4'},
-    {l:'À creuser',v:filtered.filter(o=>o.stage==='À creuser').length,c:'c1'},
-    {l:'En veille',v:filtered.filter(o=>o.stage==='En veille').length,c:'c3'},
-    {l:'Abandonné',v:filtered.filter(o=>o.stage==='Abandonné').length,c:'c5'},
+    {l:'À creuser',v:filtPistes.filter(p=>p.stage==='À creuser').length,c:'c1'},
+    {l:'En veille',v:filtPistes.filter(p=>p.stage==='En veille').length,c:'c3'},
+    {l:'Abandonné',v:filtPistes.filter(p=>p.stage==='Abandonné').length,c:'c5'},
   ].map(m=>'<div class="mc"><div class="mc-l">'+m.l+'</div><div class="mc-v '+m.c+'">'+m.v+'</div></div>').join('');
 
-  // Pipeline cols
-  // Build stage buckets: first 4 stages normal, 5th = Terminé = all TERM_STAGES
+  // Pipeline cols — all cards are piste cards
   const bs={};
-  PIPE_STAGES.forEach(s=>bs[s]=filtered.filter(o=>o.stage===s));
-  bs['Terminé']=filtered.filter(o=>TERM_STAGES.includes(o.stage));
+  PIPE_STAGES.forEach(s=>bs[s]=filtPistes.filter(p=>p.stage===s));
+  bs['Terminé']=filtPistes.filter(p=>TERM_STAGES.includes(p.stage));
+
+  function mkCard(lp){
+    const isTermine=TERM_STAGES.includes(lp.stage);
+    const hasStage=!!lp.stage;
+    const stageColor=PIPE_COLORS[lp.stage]||'#444';
+    const termColor=TERM_COLORS[lp.stage]||'#888';
+    const subLine=isTermine
+      ?'<div style="font-size:10px;font-weight:600;color:'+termColor+';margin-top:2px">◉ '+lp.stage+'</div>'
+      :(lp.next_action?'<div style="font-size:10px;color:'+stageColor+';margin-top:2px">→ '+lp.next_action+'</div>':'');
+    const badge=!hasStage?'<span class="badge b-piste" style="font-size:9px;padding:1px 5px;margin-bottom:3px;display:inline-block">Piste</span>':'';
+    return'<div class="pccard" draggable="'+hasStage+'" data-piste-id="'+lp.id+'" data-action="editPisteInPipe" data-id="'+lp.id+'" style="position:relative">'
+      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px">'
+        +'<div style="flex:1">'+badge
+          +'<strong style="font-size:11px;display:block">'+lp.nom+'</strong>'
+          +'<div style="font-size:10px;color:var(--tx2)">'+lp.societe+'</div>'
+          +(lp.solution?'<div style="font-size:10px;color:var(--ac);margin-top:1px">'+lp.solution+'</div>':'')
+          +subLine
+        +'</div>'
+        +'<button class="abtn" onclick="event.stopPropagation();delPiste(\''+lp.id+'\')" title="Supprimer" style="padding:1px 3px;margin-top:-2px;flex-shrink:0"><i class="ti ti-trash" style="font-size:11px;pointer-events:none"></i></button>'
+      +'</div>'
+      +'</div>';
+  }
 
   const pipeEl=document.getElementById('dash-pipe');
   pipeEl.innerHTML=DISPLAY_STAGES.map(s=>{
     const list=bs[s]||[];
     const color=PIPE_COLORS[s]||'#444';
-    const oppCards=list.map(o=>{
-      const p=getPiste(o.piste_id);
-      const isTermine=TERM_STAGES.includes(o.stage);
-      const termColor=TERM_COLORS[o.stage]||'#888';
-      const subLine=isTermine
-        ?'<div style="font-size:10px;font-weight:600;color:'+termColor+';margin-top:2px">◉ '+o.stage+'</div>'
-        :(o.next_action?'<div style="font-size:10px;color:'+color+';margin-top:2px">→ '+o.next_action+'</div>':'');
-      return'<div class="pccard" draggable="true" data-opp-id="'+o.id+'" data-action="editOpp" data-id="'+o.id+'">'
-        +'<strong style="font-size:11px">'+(p.nom||'—')+'</strong>'
-        +'<div style="font-size:10px;color:var(--tx2)">'+o.societe+'</div>'
-        +(o.solution?'<div style="font-size:10px;color:var(--ac);margin-top:1px">'+o.solution+'</div>':'')
-        +subLine
-        +'</div>';
-    }).join('');
-    const pisteCards=s==='Analyse besoin'?pistesWithoutOpp.map(lp=>{
-      return'<div class="pccard" style="cursor:pointer;position:relative" data-action="openEditPiste" data-id="'+lp.id+'">'
-        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px">'
-          +'<span class="badge b-piste" style="font-size:9px;padding:1px 5px;margin-bottom:3px;display:inline-block">Piste</span>'
-          +'<button class="abtn" onclick="event.stopPropagation();delPiste(\''+lp.id+'\')" title="Supprimer" style="padding:1px 3px;margin-top:-2px;flex-shrink:0"><i class="ti ti-trash" style="font-size:11px;pointer-events:none"></i></button>'
-        +'</div>'
-        +'<strong style="font-size:11px;display:block">'+lp.nom+'</strong>'
-        +'<div style="font-size:10px;color:var(--tx2)">'+lp.societe+'</div>'
-        +(lp.solution?'<div style="font-size:10px;color:var(--ac);margin-top:1px">'+lp.solution+'</div>':'')
-        +'</div>';
-    }).join(''):'';
-    const total=list.length+(s==='Analyse besoin'?pistesWithoutOpp.length:0);
-    const cards=oppCards+pisteCards+(total===0?'<div style="font-size:10px;color:var(--txm)">—</div>':'');
+    // "Analyse besoin" also shows pistes without a stage (not yet in pipeline)
+    const extraCards=s==='Analyse besoin'?pistesWithoutStage.map(mkCard).join('') :'';
+    const mainCards=list.map(mkCard).join('');
+    const total=list.length+(s==='Analyse besoin'?pistesWithoutStage.length:0);
+    const cards=mainCards+extraCards+(total===0?'<div style="font-size:10px;color:var(--txm)">—</div>':'');
     return'<div class="pcol" data-stage="'+s+'" style="border-left:3px solid '+color+'">'
       +'<div class="pchd"><span>'+s+'</span><span class="pccnt">'+total+'</span></div>'
       +cards
@@ -1007,11 +1043,10 @@ function renderDash(){
   // Regroup actions by urgency category
   const retard=[], aujourdhui=[], prochains=[], sansDates=[];
 
-  filtered.filter(o=>PIPE_STAGES.includes(o.stage)).forEach(o=>{
-    const p=getPiste(o.piste_id);
-    const item={o,p};
-    if(!o.reldate){sansDates.push(item);return;}
-    const rel=new Date(o.reldate+'T00:00:00');
+  inPipe.forEach(p=>{
+    const item={p};
+    if(!p.reldate){sansDates.push(item);return;}
+    const rel=new Date(p.reldate+'T00:00:00');
     const diff=Math.round((rel-today)/86400000);
     if(diff<0)retard.push({...item,diff});
     else if(diff===0)aujourdhui.push({...item,diff});
@@ -1020,25 +1055,25 @@ function renderDash(){
   });
 
   // Sort each group by stage order
-  const sortByStage=arr=>arr.sort((a,b)=>STAGE_ACTIONS_ORDER.indexOf(a.o.stage)-STAGE_ACTIONS_ORDER.indexOf(b.o.stage));
+  const sortByStage=arr=>arr.sort((a,b)=>STAGE_ACTIONS_ORDER.indexOf(a.p.stage)-STAGE_ACTIONS_ORDER.indexOf(b.p.stage));
   sortByStage(retard);sortByStage(aujourdhui);sortByStage(prochains);
 
   function actionRow(item,urgColor,urgLabel){
-    const {o,p,diff}=item;
-    const stageColor=PIPE_COLORS[o.stage]||'#888';
+    const {p,diff}=item;
+    const stageColor=PIPE_COLORS[p.stage]||'#888';
     return'<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg2);border-radius:6px;margin-bottom:5px;flex-wrap:wrap">'
       +'<div style="width:8px;height:8px;border-radius:50%;background:'+urgColor+';flex-shrink:0"></div>'
       +'<div style="flex:1;min-width:120px">'
         +'<strong style="font-size:13px;font-weight:500">'+(p.nom||'—')+'</strong>'
-        +'<span style="font-size:12px;color:var(--tx2);margin-left:6px">'+o.societe+'</span>'
+        +'<span style="font-size:12px;color:var(--tx2);margin-left:6px">'+p.societe+'</span>'
       +'</div>'
-      +'<div>'+badge(o.stage)+'</div>'
-      +(o.next_action
-        ?'<div style="font-size:12px;color:'+stageColor+';font-weight:500">→ '+o.next_action+'</div>'
+      +'<div>'+badge(p.stage)+'</div>'
+      +(p.next_action
+        ?'<div style="font-size:12px;color:'+stageColor+';font-weight:500">→ '+p.next_action+'</div>'
         :'<div style="font-size:12px;color:var(--txm)">Aucune action définie</div>')
       +'<div style="font-size:11px;font-weight:600;color:'+urgColor+';white-space:nowrap">'+urgLabel+'</div>'
-      +(o.assigne?'<div style="font-size:11px;color:var(--txm)">'+o.assigne+'</div>':'')
-      +'<button class="abtn" data-action="editOpp" data-id="'+o.id+'" title="Modifier" style="padding:3px 5px"><i class="ti ti-edit" style="font-size:13px"></i></button>'
+      +(p.assigne?'<div style="font-size:11px;color:var(--txm)">'+p.assigne+'</div>':'')
+      +'<button class="abtn" data-action="editPisteInPipe" data-id="'+p.id+'" title="Modifier" style="padding:3px 5px"><i class="ti ti-edit" style="font-size:13px"></i></button>'
       +'</div>';
   }
 
@@ -1066,32 +1101,32 @@ function renderPipeline(){
   const fSt=(document.getElementById('opp-stage')||{value:''}).value;
   const fEv=(document.getElementById('opp-event')||{value:''}).value;
   const fCo=(document.getElementById('opp-comm')||{value:''}).value;
-  const list=opps.filter(o=>{
-    const p=getPiste(o.piste_id);
-    const txt=((p.nom||'')+o.societe+o.evtnom+(o.solution||'')).toLowerCase();
-    return(!q||txt.includes(q))&&(!fSt||o.stage===fSt)&&(!fEv||o.evtnom===fEv)&&(!fCo||o.assigne===fCo);
-  });
+  const list=pistes.filter(p=>p.stage&&(!q||(p.nom+p.societe+(p.evtnom||p.source||'')+(p.solution||'')).toLowerCase().includes(q))&&(!fSt||p.stage===fSt)&&(!fCo||p.assigne===fCo));
   const tb=document.getElementById('opps-body');
   if(!list.length){tb.innerHTML='';document.getElementById('opps-empty').style.display='block';return;}
   document.getElementById('opps-empty').style.display='none';
-  tb.innerHTML=list.map(o=>{
-    const p=getPiste(o.piste_id);
-    const color=PIPE_COLORS[o.stage]||TERM_COLORS[o.stage]||'#888';
+  tb.innerHTML=list.map(p=>{
+    const color=PIPE_COLORS[p.stage]||TERM_COLORS[p.stage]||'#888';
     return'<tr>'
-      +'<td>'+dot(o.urgence)+'<strong style="font-weight:500">'+(p.nom||'—')+'</strong>'
+      +'<td>'+dot(p.urgence)+'<strong style="font-weight:500">'+(p.nom||'—')+'</strong>'
       +(p.poste?'<br><span style="font-size:10px;color:var(--txm)">'+p.poste+'</span>':'')+'</td>'
-      +'<td>'+o.societe+'</td>'
-      +'<td style="font-size:11px">'+o.evtnom+'</td>'
-      +'<td>'+(o.solution||'—')+'</td>'
-      +'<td>'+badge(o.stage)+'</td>'
-      +'<td>'+(o.next_action?'<span style="font-size:11px;color:'+color+'">→ '+o.next_action+'</span>':'<span style="color:var(--txm)">—</span>')
-        +'<br>'+relWarn(o.reldate)+'</td>'
-      +'<td>'+(o.assigne||'<span style="color:var(--txm)">—</span>')+'</td>'
+      +'<td>'+p.societe+'</td>'
+      +'<td style="font-size:11px">'+(p.evtnom||p.source||'—')+'</td>'
+      +'<td>'+(p.solution||'—')+'</td>'
+      +'<td>'+badge(p.stage)+'</td>'
+      +'<td>'+(p.next_action?'<span style="font-size:11px;color:'+color+'">→ '+p.next_action+'</span>':'<span style="color:var(--txm)">—</span>')'
+        +'<br>'+relWarn(p.reldate)+'</td>'
+      +'<td>'+(p.assigne||'<span style="color:var(--txm)">—</span>')+'</td>'
       +'<td style="text-align:right">'
-      +'<button class="abtn" data-action="editOpp" data-id="'+o.id+'" title="Modifier"><i class="ti ti-edit"></i></button>'
-      +'<button class="abtn" data-action="delOpp" data-id="'+o.id+'" title="Supprimer"><i class="ti ti-trash"></i></button>'
+      +'<button class="abtn" data-action="editPisteInPipe" data-id="'+p.id+'" title="Modifier"><i class="ti ti-edit"></i></button>'
+      +'<button class="abtn" data-action="delPiste" data-id="'+p.id+'" title="Supprimer"><i class="ti ti-trash"></i></button>'
       +'</td></tr>'
-      +(o.notes?'<tr><td colspan="8" class="nrow"><i class="ti ti-note" style="font-size:11px;margin-right:4px"></i>'+o.notes+'</td></tr>':'');
+      +(p.notes?'<tr><td colspan="8" class="nrow"><i class="ti ti-note" style="font-size:11px;margin-right:4px"></i>'+p.notes+'</td></tr>':'');
+  }).join('');
+
+
+
+
   }).join('');
 }
 
@@ -1177,8 +1212,8 @@ function saveEditPiste(){
   p.solution=document.getElementById('ep-solution').value;
   p.assigne=document.getElementById('ep-assigne').value;
   p.notes=document.getElementById('ep-notes').value.trim();
-  // Propagate societe to linked opps
-  opps.forEach(function(o){if(o.piste_id===id)o.societe=societe.trim().toUpperCase();});
+
+
   persist();
   closeModals();
   renderPistes();
@@ -1194,8 +1229,7 @@ function renderPistes(){
   const list=pistes.filter(p=>{
     const txt=(p.nom+p.societe+p.poste+p.email).toLowerCase();
     const evtMatch=!fEv||p.evtnom===fEv;
-    const hasOpp=opps.some(o=>o.piste_id===p.id);
-    const stMatch=fSt==='all'||(fSt==='piste'&&!hasOpp)||(fSt==='pipeline'&&hasOpp);
+    const stMatch=fSt==='all'||(fSt==='piste'&&!p.stage)||(fSt==='pipeline'&&!!p.stage);
     return(!q||txt.includes(q))&&evtMatch&&stMatch;
   });
 
@@ -1204,9 +1238,7 @@ function renderPistes(){
   document.getElementById('pistes-empty').style.display='none';
 
   tb.innerHTML=list.map(p=>{
-    const hasOpp=opps.some(o=>o.piste_id===p.id);
-    const oppStage=hasOpp?opps.find(o=>o.piste_id===p.id).stage:'';
-    const statusBadge=hasOpp?badge(oppStage):'<span class="badge b-piste">Piste</span>';
+    const statusBadge=p.stage?badge(p.stage):'<span class="badge b-piste">Piste</span>';
     const addBtn='';
     return'<tr style="cursor:pointer" data-action="openEditPiste" data-id="'+p.id+'" title="Cliquer pour modifier">'
       +'<td><strong style="font-weight:500">'+p.nom+'</strong>'
@@ -1227,7 +1259,6 @@ function renderPistes(){
 function delPiste(id){
   if(!confirm('Supprimer cette piste ?'))return;
   pistes=pistes.filter(p=>p.id!==id);
-  opps=opps.filter(o=>o.piste_id!==id);
   // unmark participant
   participants.forEach(function(p){if(p.piste_ids)p.piste_ids=p.piste_ids.filter(function(pid){return pid!==id;});});
   mailings.forEach(function(ml){ml.contacts.forEach(function(c){if(c.piste_ids)c.piste_ids=c.piste_ids.filter(function(pid){return pid!==id;});});});
@@ -1258,19 +1289,18 @@ function renderSocietes(){
   const q=(document.getElementById('soc-search')||{value:''}).value.toLowerCase();
   const sortBy=(document.getElementById('soc-sort')||{value:'opps'}).value;
 
-  // Build société map
+  // Build société map from pistes in pipeline
   const socMap={};
-  opps.forEach(function(o){
-    const key=o.societe||'—';
-    if(!socMap[key])socMap[key]={nom:key,opps:[],pistes:new Set(),valeur:0};
-    socMap[key].opps.push(o);
-    socMap[key].pistes.add(o.piste_id);
-    socMap[key].valeur+=parseInt(o.valeur)||0;
+  pistes.filter(function(p){return p.stage;}).forEach(function(p){
+    const key=p.societe||'—';
+    if(!socMap[key])socMap[key]={nom:key,pipeList:[],valeur:0};
+    socMap[key].pipeList.push(p);
+    socMap[key].valeur+=parseInt(p.valeur)||0;
   });
   let societes=Object.values(socMap);
   if(q)societes=societes.filter(function(s){return s.nom.toLowerCase().includes(q);});
   if(sortBy==='alpha')societes.sort(function(a,b){return a.nom.localeCompare(b.nom,'fr');});
-  else societes.sort(function(a,b){return b.opps.length-a.opps.length;});
+  else societes.sort(function(a,b){return b.pipeList.length-a.pipeList.length;});
 
   const el=document.getElementById('societes-list');
   if(!societes.length){
@@ -1283,16 +1313,16 @@ function renderSocietes(){
 
   societes.forEach(function(s,si){
     const sid='soc_'+s.nom.replace(/[^a-z0-9]/gi,'_');
-    const assignes=[...new Set(s.opps.map(function(o){return o.assigne;}).filter(Boolean))];
+    const assignes=[...new Set(s.pipeList.map(function(p){return p.assigne;}).filter(Boolean))];
 
     // ── Same KPI blocks as Dashboard "Vue d'ensemble" ─────────────────────
-    const concluant=s.opps.filter(function(o){return o.stage==='Opportunité';}).length;
-    const acreuser=s.opps.filter(function(o){return o.stage==='\u00c0 creuser';}).length;
-    const enVeille=s.opps.filter(function(o){return o.stage==='En veille';}).length;
-    const abandonne=s.opps.filter(function(o){return o.stage==='Abandonn\u00e9';}).length;
+    const concluant=s.pipeList.filter(function(p){return p.stage==='Opportunité';}).length;
+    const acreuser=s.pipeList.filter(function(p){return p.stage==='À creuser';}).length;
+    const enVeille=s.pipeList.filter(function(p){return p.stage==='En veille';}).length;
+    const abandonne=s.pipeList.filter(function(p){return p.stage==='Abandonné';}).length;
 
     const kpis=[
-      {l:'Pistes',     v:[...s.pistes].length, c:'c1'},
+      {l:'Pipeline',   v:s.pipeList.length, c:'c1'},
       {l:'Opportunités', v:concluant,             c:'c4'},
       {l:'\u00c0 creuser',  v:acreuser,              c:'c1'},
       {l:'En veille',  v:enVeille,              c:'c3'},
@@ -1307,23 +1337,23 @@ function renderSocietes(){
     }).join('');
 
     // ── Detail rows (collapsed) ───────────────────────────────────────────
-    const detailRows=s.opps.map(function(o){
-      const p=getPiste(o.piste_id);
-      const isTermine=TERM_STAGES.includes(o.stage);
-      const termColor=TERM_COLORS[o.stage]||'#888';
-      const stageColor=PIPE_COLORS[o.stage]||'#888';
-      return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--bg);border-radius:6px;font-size:12px;flex-wrap:wrap;margin-bottom:4px;cursor:pointer" data-action="openEditPiste" data-id="'+p.id+'" title="Modifier la piste">'
+    const detailRows=s.pipeList.map(function(p){
+      const isTermine=TERM_STAGES.includes(p.stage);
+      const termColor=TERM_COLORS[p.stage]||'#888';
+      const stageColor=PIPE_COLORS[p.stage]||'#888';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--bg);border-radius:6px;font-size:12px;flex-wrap:wrap;margin-bottom:4px;cursor:pointer" data-action="editPisteInPipe" data-id="'+p.id+'" title="Modifier">'
         +'<span style="flex:1;min-width:100px;font-weight:500">'+(p.nom||'—')+'</span>'
-        +'<span style="color:var(--tx2)">'+(o.solution||'—')+'</span>'
-        +badge(o.stage)
+        +'<span style="color:var(--tx2)">'+(p.solution||'—')+'</span>'
+        +badge(p.stage)
         +(isTermine
-          ?'<span style="font-size:11px;font-weight:600;color:'+termColor+'">◉ '+o.stage+'</span>'
-          :(o.next_action?'<span style="font-size:11px;color:'+stageColor+'">→ '+o.next_action+'</span>':''))
-        +(o.valeur>0?'<span style="color:#7A1AEA;font-weight:600">'+parseInt(o.valeur).toLocaleString('fr-FR')+' Ar</span>':'')
-        +(o.assigne?'<span style="color:#1AAE6A;font-size:11px">'+o.assigne+'</span>':'')
-        +'<button class="abtn" data-action="editOpp" data-id="'+o.id+'" style="padding:2px 4px" onclick="event.stopPropagation()"><i class="ti ti-edit" style="font-size:12px"></i></button>'
+          ?'<span style="font-size:11px;font-weight:600;color:'+termColor+'">◉ '+p.stage+'</span>'
+          :(p.next_action?'<span style="font-size:11px;color:'+stageColor+'">→ '+p.next_action+'</span>':''))
+        +(p.valeur>0?'<span style="color:#7A1AEA;font-weight:600">'+parseInt(p.valeur).toLocaleString('fr-FR')+' Ar</span>':'')
+        +(p.assigne?'<span style="color:#1AAE6A;font-size:11px">'+p.assigne+'</span>':'')
+        +'<button class="abtn" data-action="editPisteInPipe" data-id="'+p.id+'" style="padding:2px 4px" onclick="event.stopPropagation()"><i class="ti ti-edit" style="font-size:12px"></i></button>'
         +'</div>';
     }).join('');
+
 
     // ── Card ──────────────────────────────────────────────────────────────
     var card=document.createElement('div');
@@ -1349,7 +1379,7 @@ function renderSocietes(){
       // Detail panel (collapsed)
       +'<div id="'+sid+'" style="display:none;margin-top:12px;padding-top:12px;border-top:0.5px solid var(--bl)">'
         +'<div style="font-size:11px;font-weight:600;color:var(--txm);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">'
-          +s.opps.length+' opportunit'+(s.opps.length>1?'és':'é')+' · '+[...s.pistes].length+' piste'+(([...s.pistes].length>1)?'s':'')
+          +s.pipeList.length+' piste'+(s.pipeList.length>1?'s':'')+' en pipeline'
         +'</div>'
         +detailRows
       +'</div>';
@@ -1452,7 +1482,13 @@ function convertEnPiste(source, id){
     renderMailing();
   }
 
-  if(pisteId) setTimeout(function(){openEnterPipeline(pisteId);}, 50);
+  if(pisteId){
+    var np=pistes.find(function(lp){return lp.id===pisteId;});
+    if(np&&!np.stage) np.stage='Analyse besoin';
+    persist();
+    if(curTab==='dashboard')renderDash();
+    if(curTab==='pistes')renderPistes();
+  }
 }
 
 function openEnterPipeline(pisteId){
@@ -1466,7 +1502,7 @@ function openEnterPipeline(pisteId){
   sel.innerHTML='<option value="">-- Sélectionner une piste --</option>'
     +'<option value="__new__">✚ Créer une nouvelle piste…</option>'
     +pistes.map(lp=>{
-      const inPipe=opps.some(o=>o.piste_id===lp.id&&PIPE_STAGES.includes(o.stage));
+      const inPipe=PIPE_STAGES.includes(lp.stage);
       return'<option value="'+lp.id+'"'+(inPipe?' style="color:var(--txm)"':'')+'>'+lp.nom+' — '+lp.societe+(inPipe?' (déjà en pipeline)':'')+'</option>';
     }).join('');
   if(pisteId)sel.value=pisteId;
@@ -1543,45 +1579,44 @@ function saveOpp(){
     created:new Date().toISOString()
   };
   if(!evtData[evtnom])evtData[evtnom]={invites:0,presents:0,cout:0,date:'',lieu:'',goodies:''};
-  opps.unshift(obj);
+  // opps no longer used; pipeline is managed via piste.stage
   persist();closeModals();updateTopbar();
   if(curTab==='pipeline'){renderPipeline();fillSelect('opp-event',getEvtNames());}
   if(curTab==='dashboard')renderDash();
   if(curTab==='stats-events'||curTab==='stats-crm')renderStats();
 }
 
-// ── EDIT OPPORTUNITÉ ───────────────────────────────────────────────────────
-function openEditOpp(id){
+// ── EDIT PISTE DANS PIPELINE ───────────────────────────────────────────────
+function openEditPisteInPipe(id){
   editOppId=id;
-  const o=opps.find(x=>x.id===id);
-  if(!o)return;
-  const p=getPiste(o.piste_id);
+  const p=getPiste(id);
+  if(!p)return;
   document.getElementById('edit-info').innerHTML=
-    '<strong>'+(p.nom||'—')+'</strong> — '+o.societe
-    +'<br><span style="color:var(--txm);font-size:12px">'+o.evtnom+'</span>';
-  document.getElementById('e-stage').value=o.stage;
+    '<strong>'+(p.nom||'—')+'</strong> — '+p.societe
+    +'<br><span style="color:var(--txm);font-size:12px">'+(p.evtnom||p.source||'')+'</span>';
+  document.getElementById('e-stage').value=p.stage||'Analyse besoin';
   updateActionList('e-action','e-stage');
-  document.getElementById('e-action').value=o.next_action||'';
-  document.getElementById('e-reldate').value=o.reldate||'';
-  document.getElementById('e-urgence').value=o.urgence||'vert';
-  document.getElementById('e-assigne').value=o.assigne||'';
-  document.getElementById('e-valeur').value=o.valeur||'';
-  document.getElementById('e-solution').value=o.solution||'';
-  document.getElementById('e-notes').value=o.notes||'';
+  document.getElementById('e-action').value=p.next_action||'';
+  document.getElementById('e-reldate').value=p.reldate||'';
+  document.getElementById('e-urgence').value=p.urgence||'vert';
+  document.getElementById('e-assigne').value=p.assigne||'';
+  document.getElementById('e-valeur').value=p.valeur||'';
+  document.getElementById('e-solution').value=p.solution||'';
+  document.getElementById('e-notes').value=p.notes||'';
   document.getElementById('edit-modal').style.display='flex';
 }
 
 function saveEdit(){
-  const o=opps.find(x=>x.id===editOppId);
-  if(!o)return;
-  o.stage=document.getElementById('e-stage').value;
-  o.next_action=document.getElementById('e-action').value;
-  o.reldate=document.getElementById('e-reldate').value;
-  o.urgence=document.getElementById('e-urgence').value;
-  o.assigne=document.getElementById('e-assigne').value;
-  o.valeur=parseInt(document.getElementById('e-valeur').value)||0;
-  o.solution=document.getElementById('e-solution').value;
-  o.notes=document.getElementById('e-notes').value.trim();
+  const p=getPiste(editOppId);
+  if(!p)return;
+  p.stage=document.getElementById('e-stage').value;
+  p.next_action=document.getElementById('e-action').value;
+  p.reldate=document.getElementById('e-reldate').value;
+  p.urgence=document.getElementById('e-urgence').value;
+  p.assigne=document.getElementById('e-assigne').value;
+  p.valeur=parseInt(document.getElementById('e-valeur').value)||0;
+  p.solution=document.getElementById('e-solution').value;
+  p.notes=document.getElementById('e-notes').value.trim();
   persist();closeModals();updateTopbar();
   if(curTab==='pipeline')renderPipeline();
   if(curTab==='dashboard')renderDash();
@@ -1886,8 +1921,8 @@ function renderEvents(){
   evts.forEach(function(e,i){
     const ed=evtData[e]||{};
     const ptotal=participants.filter(function(p){return p.evtnom===e;}).length;
-    const pistesEvt=pistes.filter(function(p){return p.evtnom===e;}).length;
-    const oppsEvt=opps.filter(function(o){return o.evtnom===e&&PIPE_STAGES.includes(o.stage);}).length;
+    const pistesEvt=pistes.filter(function(p){return p.evtnom===e&&!p.stage;}).length;
+    const oppsEvt=pistes.filter(function(p){return p.evtnom===e&&PIPE_STAGES.includes(p.stage);}).length;
     const inv=parseInt(ed.invites)||0;
     const cout=parseInt(ed.cout)||0;
     const tconv=ptotal>0?Math.round(pistesEvt/ptotal*100)+'%':'—';
@@ -1914,7 +1949,7 @@ function renderEvents(){
     const txInscription=nbInvites>0?Math.round(nbConfirmes/nbInvites*100)+'%':'—';
     const txParticipation=nbConfirmes>0?Math.round(nbPresents/nbConfirmes*100)+'%':'—';
     const partRows=evtParticipants.map(function(p){
-      var pisteCnt=(p.piste_ids||[]).length;
+      var pisteCnt=(p.piste_ids||[]).filter(function(pid){return pistes.some(function(lp){return lp.id===pid&&!lp.stage;});}).length;
       var pStatut=p.statut||'À confirmer';
       var pStatutPost=p.statutPost||null;
       var pStatutApres=p.statutApres||null;
@@ -2014,9 +2049,7 @@ function renderEvents(){
         })()
         +'<td style="padding:7px 8px;text-align:right;white-space:nowrap">'
           +(pisteCnt>0?'<span class="badge b-piste" style="font-size:10px;margin-right:5px">'+pisteCnt+' piste'+(pisteCnt>1?'s':'')+'</span>':'')
-          +(pStatutApres==='RDV effectué'
-            ?'<button class="btn-piste" style="font-size:11px;padding:4px 8px;white-space:nowrap" data-action="convertEnPisteEvent" data-id="'+p.id+'">+ Piste</button>'
-            :'<button disabled style="font-size:11px;padding:4px 8px;white-space:nowrap;opacity:0.38;cursor:not-allowed;background:var(--bg2);color:var(--txm);border:0.5px solid var(--bl);border-radius:6px">+ Piste</button>')
+          +'<button class="btn-piste" style="font-size:11px;padding:4px 8px;white-space:nowrap" data-action="convertEnPisteEvent" data-id="'+p.id+'">+ Piste</button>'
           +'<button class="abtn" data-action="delParticipant" data-id="'+p.id+'" title="Supprimer ce participant">'
             +'<i class="ti ti-trash" style="font-size:12px;pointer-events:none"></i>'
             +'</button>'
@@ -2141,8 +2174,8 @@ function renderStatsEvents(){
     const pres=parts.filter(function(p){return p.statut==='Présent';}).length;
     const conf=parts.filter(function(p){return p.statut==='Confirmé';}).length;
     const abs=parts.filter(function(p){return p.statut==='Absent';}).length;
-    const pist=pistes.filter(function(p){return p.evtnom===e;}).length;
-    const pipe=opps.filter(function(o){return o.evtnom===e&&PIPE_STAGES.includes(o.stage);}).length;
+    const pist=pistes.filter(function(p){return p.evtnom===e&&!p.stage;}).length;
+    const pipe=pistes.filter(function(p){return p.evtnom===e&&PIPE_STAGES.includes(p.stage);}).length;
     const txPres=inv>0?Math.round(pres/inv*100)+'%':parts.length>0?Math.round(pres/parts.length*100)+'%':'—';
     const txConv=pres>0?Math.round(pist/pres*100)+'%':'—';
     const color=COLORS[i%COLORS.length];
@@ -2182,9 +2215,9 @@ function renderStatsEvents(){
       labels:evts.map(function(e){return e.length>18?e.slice(0,16)+'…':e;}),
       datasets:[
         {label:'Présents',data:evts.map(function(e){return participants.filter(function(p){return p.evtnom===e&&p.statut==='Présent';}).length;}),backgroundColor:'#c97a10',borderRadius:3},
-        {label:'Pistes',data:evts.map(function(e){return pistes.filter(function(p){return p.evtnom===e;}).length;}),backgroundColor:'#A01864',borderRadius:3},
-        {label:'Pipeline',data:evts.map(function(e){return opps.filter(function(o){return o.evtnom===e&&PIPE_STAGES.includes(o.stage);}).length;}),backgroundColor:'#1A7AEA',borderRadius:3},
-        {label:'Opportunités',data:evts.map(function(e){return opps.filter(function(o){return o.evtnom===e&&o.stage==='Opportunité';}).length;}),backgroundColor:'#1AAE6A',borderRadius:3},
+        {label:'Pistes',data:evts.map(function(e){return pistes.filter(function(p){return p.evtnom===e&&!p.stage;}).length;}),backgroundColor:'#A01864',borderRadius:3},
+        {label:'Pipeline',data:evts.map(function(e){return pistes.filter(function(p){return p.evtnom===e&&PIPE_STAGES.includes(p.stage);}).length;}),backgroundColor:'#1A7AEA',borderRadius:3},
+        {label:'Opportunités',data:evts.map(function(e){return pistes.filter(function(p){return p.evtnom===e&&p.stage==='Opportunité';}).length;}),backgroundColor:'#1AAE6A',borderRadius:3},
       ]
     },
     options:{responsive:true,maintainAspectRatio:false,
@@ -2365,8 +2398,8 @@ function renderStatsCrm(){
   // Funnel global
   destroyChart('funnel-crm');
   const fVals=[participants.length,pistes.length,
-    opps.filter(function(o){return PIPE_STAGES.includes(o.stage);}).length,
-    opps.filter(function(o){return o.stage==='Opportunité';}).length];
+    pistes.filter(function(p){return PIPE_STAGES.includes(p.stage);}).length,
+    pistes.filter(function(p){return p.stage==='Opportunité';}).length];
   charts['funnel-crm']=new Chart(document.getElementById('ch-funnel-crm'),{
     type:'bar',
     data:{labels:['Participants','Pistes','En pipeline','Opportunités'],
@@ -2384,7 +2417,7 @@ function renderStatsCrm(){
   charts['pipeline-stages']=new Chart(document.getElementById('ch-pipeline-stages'),{
     type:'bar',
     data:{labels:PIPE_STAGES.map(function(s){return s.length>14?s.slice(0,12)+'…':s;}),
-      datasets:[{data:PIPE_STAGES.map(function(s){return opps.filter(function(o){return o.stage===s;}).length;}),
+      datasets:[{data:PIPE_STAGES.map(function(s){return pistes.filter(function(p){return p.stage===s;}).length;}),
         backgroundColor:['#1A7AEA','#2d4baa','#7A1AEA','#5b21b6'],borderRadius:4}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false}},
@@ -2397,7 +2430,7 @@ function renderStatsCrm(){
   charts['pipeline-pie']=new Chart(document.getElementById('ch-pipeline-pie'),{
     type:'doughnut',
     data:{labels:TERM_STAGES,
-      datasets:[{data:TERM_STAGES.map(function(s){return opps.filter(function(o){return o.stage===s;}).length;}),
+      datasets:[{data:TERM_STAGES.map(function(s){return pistes.filter(function(p){return p.stage===s;}).length;}),
         backgroundColor:['#1AAE6A','#c97a10','#888780','#E24B4A'],borderWidth:2,borderColor:'var(--bg)'}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
       plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}}}}
@@ -2411,8 +2444,8 @@ function renderStatsCrm(){
     data:{labels:CL,
       datasets:[
         {label:'Pistes',data:CL.map(function(c){return pistes.filter(function(p){return p.assigne===c;}).length;}),backgroundColor:'rgba(160,24,100,0.7)',borderRadius:3},
-        {label:'Pipeline actif',data:CL.map(function(c){return opps.filter(function(o){return o.assigne===c&&PIPE_STAGES.includes(o.stage);}).length;}),backgroundColor:'rgba(26,122,234,0.7)',borderRadius:3},
-        {label:'Opportunités',data:CL.map(function(c){return opps.filter(function(o){return o.assigne===c&&o.stage==='Opportunité';}).length;}),backgroundColor:'rgba(26,174,106,0.7)',borderRadius:3},
+        {label:'Pipeline actif',data:CL.map(function(c){return pistes.filter(function(p){return p.assigne===c&&PIPE_STAGES.includes(p.stage);}).length;}),backgroundColor:'rgba(26,122,234,0.7)',borderRadius:3},
+        {label:'Opportunités',data:CL.map(function(c){return pistes.filter(function(p){return p.assigne===c&&p.stage==='Opportunité';}).length;}),backgroundColor:'rgba(26,174,106,0.7)',borderRadius:3},
       ]
     },
     options:{responsive:true,maintainAspectRatio:false,
@@ -2433,10 +2466,10 @@ function renderStatsCrm(){
         const total=m.contacts.length;
         const envoye=m.contacts.filter(function(c){return c.statut!=='Non envoyé';}).length;
         const rdv=m.contacts.filter(function(c){return c.statut==='RDV planifié'||c.statut==='RDV effectué';}).length;
-        const nbPistes=m.contacts.reduce(function(s,c){return s+(c.piste_ids?c.piste_ids.length:0);},0);
+        const nbPistes=m.contacts.reduce(function(s,c){return s+(c.piste_ids||[]).filter(function(pid){return pistes.some(function(lp){return lp.id===pid&&!lp.stage;});}).length;},0);
         const concluants=m.contacts.filter(function(c){
           if(!c.piste_ids||!c.piste_ids.length)return false;
-          return c.piste_ids.some(function(pid){return opps.some(function(o){return o.piste_id===pid&&o.stage==='Opportunité';});});
+          return c.piste_ids.some(function(pid){return pistes.some(function(lp){return lp.id===pid&&lp.stage==='Opportunité';});});
         }).length;
         const txEnv=total>0?Math.round(envoye/total*100)+'%':'—';
         const txRdv=total>0?Math.round(rdv/total*100)+'%':'—';
@@ -2468,11 +2501,11 @@ function renderStatsCrm(){
   document.getElementById('crm-comm-detail').innerHTML=CL.map(function(c,i){
     const color=CC[i];
     const myP=pistes.filter(function(p){return p.assigne===c;}).length;
-    const myO=opps.filter(function(o){return o.assigne===c;});
-    const act=myO.filter(function(o){return PIPE_STAGES.includes(o.stage);}).length;
-    const concl=myO.filter(function(o){return o.stage==='Opportunité';}).length;
-    const ac=myO.filter(function(o){return o.stage==='À creuser';}).length;
-    const vl=myO.filter(function(o){return PIPE_STAGES.includes(o.stage);}).reduce(function(s,o){return s+(parseInt(o.valeur)||0);},0);
+    const myO=pistes.filter(function(p){return p.assigne===c&&p.stage;});
+    const act=myO.filter(function(p){return PIPE_STAGES.includes(p.stage);}).length;
+    const concl=myO.filter(function(p){return p.stage==='Opportunité';}).length;
+    const ac=myO.filter(function(p){return p.stage==='À creuser';}).length;
+    const vl=myO.filter(function(p){return PIPE_STAGES.includes(p.stage);}).reduce(function(s,p){return s+(parseInt(p.valeur)||0);},0);
     return '<div class="icard" style="border-left:3px solid '+color+';margin-bottom:10px">'
       +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
         +'<div class="cavatar" style="background:'+color+'22;color:'+color+';width:36px;height:36px;font-size:13px">'+c.slice(0,2).toUpperCase()+'</div>'
@@ -2496,9 +2529,9 @@ function renderStatsCrm(){
 
 function exportCSV(){
   const dq=String.fromCharCode(34);
-  const rows=opps.map(o=>{
-    const p=getPiste(o.piste_id);
-    const vals=[p.nom,p.societe,p.poste,p.email,p.tel,o.evtnom,o.solution,o.stage,o.next_action||'',o.valeur||0,o.reldate,o.urgence,o.assigne,o.notes];
+  const rows=pistes.filter(p=>p.stage).map(p=>{
+    const vals=[p.nom,p.societe,p.poste,p.email,p.tel,p.evtnom||p.source||'',p.solution,p.stage,p.next_action||'',p.valeur||0,p.reldate,p.urgence,p.assigne,p.notes];
+    return vals.map(v=>dq+(v||'').toString().replace(new RegExp(dq,'g'),dq+dq)+dq).join(',');
     return vals.map(v=>dq+(v||'').toString().replace(new RegExp(dq,'g'),dq+dq)+dq).join(',');
   });
   const hdr='Nom,Societe,Poste,Email,Tel,Evenement,Solution,Etape,Prochaine action,Valeur Ar,Relance,Urgence,Assigne,Notes';
@@ -2517,9 +2550,9 @@ document.addEventListener('click',function(e){
   const id=btn.getAttribute('data-id');
   const sid=btn.getAttribute('data-sid');
   if(act==='openPisteModal')openPisteModal(id);
-  else if(act==='enterPipeline')openEnterPipeline(id);
-  else if(act==='editOpp'){e.stopPropagation();openEditOpp(id);}
-  else if(act==='delOpp'){e.stopPropagation();delOpp(id);}
+  else if(act==='enterPipeline'){e.stopPropagation();var _ep=getPiste(id);if(_ep&&!_ep.stage){_ep.stage='Analyse besoin';persist();renderPistes();renderDash();}}
+  else if(act==='editPisteInPipe'){e.stopPropagation();openEditPisteInPipe(id);}
+  else if(act==='delOpp'){e.stopPropagation();}
   else if(act==='openEditPiste'){e.stopPropagation();openEditPiste(id);}
   else if(act==='delPiste'){e.stopPropagation();delPiste(id);}
   else if(act==='toggleEvtDetail')toggleEvtDetail(sid);
@@ -2747,7 +2780,7 @@ function renderMailing(){
       if(c.piste_id&&!c.piste_ids){c.piste_ids=[c.piste_id];delete c.piste_id;}
       else if(!c.piste_ids){c.piste_ids=[];}
     });
-    const piste=displayC.reduce(function(s,c){return s+(c.piste_ids?c.piste_ids.length:0);},0);
+    const piste=displayC.reduce(function(s,c){return s+(c.piste_ids||[]).filter(function(pid){return pistes.some(function(lp){return lp.id===pid&&!lp.stage;});}).length;},0);
     const txEnv=totalC>0?Math.round(envoye/totalC*100)+'%':'—';
     const txRdv=totalC>0?Math.round(rdv/totalC*100)+'%':'—';
 
@@ -2807,7 +2840,7 @@ function renderMailing(){
           +'</tr></thead>'
           +'<tbody>'
             +displayC.map(function(c){
-              const pisteCntM=(c.piste_ids||[]).length;
+              const pisteCntM=(c.piste_ids||[]).filter(function(pid){return pistes.some(function(lp){return lp.id===pid&&!lp.stage;});}).length;
               const hasPiste=pisteCntM>0;
               const mailAction=getMailAction(c);
               const commIdx=COMMS.indexOf(c.assigne);
@@ -3173,11 +3206,12 @@ function mailingToPiste(mailingId,contactId){
     solution:'',assigne:'',notes:'',
     created:new Date().toISOString()
   };
+  piste.stage='Analyse besoin';
   pistes.unshift(piste);
   if(!c.piste_ids)c.piste_ids=[];
   c.piste_ids.push(piste.id);
   persist();renderMailing();
-  openEnterPipeline(piste.id);
+  if(curTab==='dashboard')renderDash();
 }
 
 
@@ -3230,17 +3264,17 @@ function saveEditMailingContact(){
 }
 
 
-var dragOppId=null;
-var termineOppId=null;
+var dragPisteId=null;
+var terminePisteId=null;
 
 function initDragDrop(){
   var pipeEl=document.getElementById('dash-pipe');
   if(!pipeEl)return;
 
-  // Cards — dragstart
-  pipeEl.querySelectorAll('.pccard').forEach(function(card){
+  // Cards — dragstart (only cards with draggable=true, i.e. pistes with a stage)
+  pipeEl.querySelectorAll('.pccard[draggable="true"]').forEach(function(card){
     card.addEventListener('dragstart',function(e){
-      dragOppId=card.getAttribute('data-opp-id');
+      dragPisteId=card.getAttribute('data-piste-id');
       card.classList.add('dragging');
       e.dataTransfer.effectAllowed='move';
     });
@@ -3248,9 +3282,8 @@ function initDragDrop(){
       card.classList.remove('dragging');
       pipeEl.querySelectorAll('.pcol').forEach(function(col){col.classList.remove('dragover');});
     });
-    // Prevent editOpp from firing on drag
     card.addEventListener('click',function(e){
-      if(dragOppId!==null)e.stopPropagation();
+      if(dragPisteId!==null)e.stopPropagation();
     });
   });
 
@@ -3268,20 +3301,18 @@ function initDragDrop(){
       e.preventDefault();
       col.classList.remove('dragover');
       var stage=col.getAttribute('data-stage');
-      if(!dragOppId||!stage)return;
+      if(!dragPisteId||!stage)return;
       if(stage==='Terminé'){
-        // Show status choice modal
-        termineOppId=dragOppId;
-        var o=opps.find(function(x){return x.id===termineOppId;});
-        var p=o?getPiste(o.piste_id):{};
+        terminePisteId=dragPisteId;
+        var p=getPiste(terminePisteId);
         var infoEl=document.getElementById('termine-piste-info');
-        if(infoEl)infoEl.innerHTML='<strong>'+(p.nom||'—')+'</strong> — '+(o?o.societe:'');
+        if(infoEl)infoEl.innerHTML='<strong>'+(p?p.nom:'—')+'</strong> — '+(p?p.societe:'');
         document.getElementById('termine-modal').style.display='flex';
       } else {
-        var o=opps.find(function(x){return x.id===dragOppId;});
-        if(o&&o.stage!==stage){o.stage=stage;persist();renderDash();}
+        var p=getPiste(dragPisteId);
+        if(p&&p.stage!==stage){p.stage=stage;persist();renderDash();}
       }
-      dragOppId=null;
+      dragPisteId=null;
     });
   });
 }
@@ -3291,10 +3322,10 @@ document.addEventListener('click',function(e){
   var btn=e.target.closest('.btn-terme');
   if(!btn)return;
   var stage=btn.getAttribute('data-stage');
-  if(!stage||!termineOppId)return;
-  var o=opps.find(function(x){return x.id===termineOppId;});
-  if(o){o.stage=stage;persist();}
-  termineOppId=null;
+  if(!stage||!terminePisteId)return;
+  var p=getPiste(terminePisteId);
+  if(p){p.stage=stage;persist();}
+  terminePisteId=null;
   closeModals();
   renderDash();
 });
