@@ -1114,7 +1114,7 @@ function renderPipeline(){
       +'<td style="font-size:11px">'+(p.evtnom||p.source||'—')+'</td>'
       +'<td>'+(p.solution||'—')+'</td>'
       +'<td>'+badge(p.stage)+'</td>'
-      +'<td>'+(p.next_action?'<span style="font-size:11px;color:'+color+'">→ '+p.next_action+'</span>':'<span style="color:var(--txm)">—</span>')'
+      +'<td>'+(p.next_action?'<span style="font-size:11px;color:'+color+'">→ '+p.next_action+'</span>':'<span style="color:var(--txm)">—</span>')
         +'<br>'+relWarn(p.reldate)+'</td>'
       +'<td>'+(p.assigne||'<span style="color:var(--txm)">—</span>')+'</td>'
       +'<td style="text-align:right">'
@@ -1127,7 +1127,7 @@ function renderPipeline(){
 
 
 
-  }).join('');
+
 }
 
 function delOpp(id){
