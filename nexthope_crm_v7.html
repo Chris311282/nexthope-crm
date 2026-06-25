@@ -453,11 +453,11 @@ tr:hover td{background:var(--bg2)}
         <select id="o-action"><option value="">-- Action --</option></select>
       </div>
       <div class="fg"><label class="flabel">Date de relance</label><input id="o-reldate" type="date"></div>
-      <div class="fg"><label class="flabel">Urgence</label>
+      <div class="fg"><label class="flabel">Température</label>
         <select id="o-urgence">
-          <option value="vert">🟢 OK</option>
-          <option value="amber">🟠 Moyen terme</option>
-          <option value="rouge">🔴 Urgent</option>
+          <option value="vert">🔵 Froid</option>
+          <option value="amber">🟠 Tiède</option>
+          <option value="rouge">🔴 Chaud</option>
         </select>
       </div>
       <div class="fg"><label class="flabel">Assigné à</label>
@@ -620,11 +620,11 @@ tr:hover td{background:var(--bg2)}
         <select id="e-action"><option value="">-- Action --</option></select>
       </div>
       <div class="fg"><label class="flabel">Date de relance</label><input id="e-reldate" type="date"></div>
-      <div class="fg"><label class="flabel">Urgence</label>
+      <div class="fg"><label class="flabel">Température</label>
         <select id="e-urgence">
-          <option value="vert">🟢 OK</option>
-          <option value="amber">🟠 Moyen terme</option>
-          <option value="rouge">🔴 Urgent</option>
+          <option value="vert">🔵 Froid</option>
+          <option value="amber">🟠 Tiède</option>
+          <option value="rouge">🔴 Chaud</option>
         </select>
       </div>
       <div class="fg"><label class="flabel">Assigné à</label>
@@ -1943,8 +1943,8 @@ function renderEvents(){
     const nbAbsents=evtParticipants.filter(function(p){return p.statutPost==='Absent';}).length;
     const nbIndispo=evtParticipants.filter(function(p){return p.statut==='Indisponible';}).length;
     const nbPasDeRetour=evtParticipants.filter(function(p){return p.statut==='Pas de retour';}).length;
-    const txInscription=nbInvites>0?Math.round(nbConfirmes/nbInvites*100)+'%':'—';
-    const txParticipation=nbConfirmes>0?Math.round(nbPresents/nbConfirmes*100)+'%':'—';
+    const txInscription=inv>0?Math.round(nbInvites/inv*100)+'%':(nbInvites>0?'—':'—');
+    const txParticipation=nbInvites>0?Math.round(nbPresents/nbInvites*100)+'%':'—';
     const partRows=evtParticipants.map(function(p){
       var pisteCnt=(p.piste_ids||[]).filter(function(pid){return pistes.some(function(lp){return lp.id===pid&&!lp.stage;});}).length;
       var pStatut=p.statut||'À confirmer';
@@ -2083,7 +2083,7 @@ function renderEvents(){
             +(ed.lieu?'<span><i class="ti ti-map-pin" style="font-size:10px;margin-right:3px"></i>'+ed.lieu+'</span>':'')
           +'</div>'
           +'<div style="display:flex;gap:5px;flex-wrap:wrap">'
-            +[{l:'Invités',v:nbInvites||'—',c:'var(--txm)'},{l:'Inscrits',v:nbConfirmes||'—',c:'#0c5294'},{l:'Présents',v:nbPresents,c:color},{l:"Tx inscription",v:txInscription,c:'#1A7AEA'},{l:'Tx participation',v:txParticipation,c:'#c97a10'},{l:'Pistes',v:pistesEvt,c:'#A01864'}]
+            +[{l:'Invités',v:inv||'—',c:'var(--txm)'},{l:'Inscrits',v:nbInvites||'—',c:'#0c5294'},{l:'Présents',v:nbPresents,c:color},{l:"Tx inscription",v:txInscription,c:'#1A7AEA'},{l:'Tx participation',v:txParticipation,c:'#c97a10'},{l:'Pistes',v:pistesEvt,c:'#A01864'}]
             .concat(cout>0?[{l:'Coût total',v:cout.toLocaleString('fr-FR')+' Ar',c:'#7A1AEA'}]:[]).map(function(k){
               return '<div style="display:flex;flex-direction:column;align-items:center;padding:2px 7px;background:var(--bg);border:0.5px solid var(--bl);border-radius:6px;min-width:52px">'
                 +'<div style="font-size:15px;font-weight:600;line-height:1.3;color:'+k.c+'">'+k.v+'</div>'
@@ -2531,7 +2531,7 @@ function exportCSV(){
     return vals.map(v=>dq+(v||'').toString().replace(new RegExp(dq,'g'),dq+dq)+dq).join(',');
     return vals.map(v=>dq+(v||'').toString().replace(new RegExp(dq,'g'),dq+dq)+dq).join(',');
   });
-  const hdr='Nom,Societe,Poste,Email,Tel,Evenement,Solution,Etape,Prochaine action,Valeur Ar,Relance,Urgence,Assigne,Notes';
+  const hdr='Nom,Societe,Poste,Email,Tel,Evenement,Solution,Etape,Prochaine action,Valeur Ar,Relance,Temperature,Assigne,Notes';
   const bom=String.fromCharCode(0xFEFF);
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([bom+hdr+'\n'+rows.join('\n')],{type:'text/csv;charset=utf-8;'}));
