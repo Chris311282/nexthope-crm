@@ -794,7 +794,6 @@ function applyNorm(){
     c.piste_ids=c.piste_ids.filter(function(pid){return pisteIdSet.has(pid);});
   });});
   Object.keys(evtData).forEach(function(k){if(k.startsWith('Mailing'))delete evtData[k];});
-  Object.keys(EVT_DEF).forEach(function(k){if(!evtData[k]&&!_deletedEvts.has(k))evtData[k]=Object.assign({},EVT_DEF[k]);});
   getEvtNames().forEach(function(k){
     if(!evtData[k])evtData[k]={invites:0,presents:0,cout:0,date:'',lieu:'',goodies:''};
     ['date','lieu','goodies'].forEach(function(f){if(evtData[k][f]===undefined)evtData[k][f]='';});
