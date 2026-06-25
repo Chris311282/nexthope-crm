@@ -2071,8 +2071,10 @@ function renderEvents(){
               +' data-oldname="'+e+'"'
               +' data-sid="'+sid+'"'
               +' value="'+e+'"'
+              +' size="'+Math.max(10,e.length+2)+'"'
               +' style="font-size:14px;font-weight:600;color:'+color+';border:none;background:transparent;'
-                +'outline:none;min-width:0;padding:2px 4px;border-radius:4px;cursor:text;font-family:var(--fn);width:100%"'
+                +'outline:none;min-width:80px;max-width:400px;padding:2px 4px;border-radius:4px;cursor:text;font-family:var(--fn)"'
+              +' oninput="this.size=Math.max(10,this.value.length+2)"'
               +' onclick="event.stopPropagation()">'
             +'<i class="ti ti-pencil" style="font-size:11px;color:var(--txm);flex-shrink:0"></i>'
           +'</div>'
@@ -2154,6 +2156,13 @@ function renameEvt(oldName, newName, sid){
   renderEvents();
   if(curTab==='dashboard')renderDash();
   if(curTab==='stats-events'||curTab==='stats-crm')renderStats();
+}
+function renameMailing(mid, newName){
+  newName=(newName||'').trim();
+  var m=mailings.find(function(x){return x.id===mid;});
+  if(!m||!newName||newName===m.nom)return;
+  m.nom=newName;
+  persist();
 }
 
 
@@ -2633,7 +2642,7 @@ document.addEventListener('change',function(e){
   }
 });
 document.addEventListener('focusin',function(e){
-  const inp=e.target.closest('.evt-rename-input');
+  const inp=e.target.closest('.evt-rename-input,.ml-rename-input');
   if(!inp)return;
   inp.style.background='var(--bg)';
   inp.style.border='0.5px solid var(--bm)';
@@ -2645,28 +2654,18 @@ document.addEventListener('focusout',function(e){
   inp.style.background='transparent';
   inp.style.border='none';
   renameEvt(inp.getAttribute('data-oldname'),inp.value,inp.getAttribute('data-sid'));
-});
-document.addEventListener('keydown',function(e){
-  if(e.key==='Enter'&&e.target.closest('.evt-rename-input'))e.target.blur();
-});
-
-document.addEventListener('focusin',function(e){
-  const inp=e.target.closest('.evt-rename-input');
-  if(!inp)return;
-  inp.style.background='var(--bg)';
-  inp.style.border='0.5px solid var(--bm)';
+  inp.setAttribute('data-oldname',inp.value.trim()||inp.getAttribute('data-oldname'));
 });
 document.addEventListener('focusout',function(e){
-  const inp=e.target.closest('.evt-rename-input');
+  const inp=e.target.closest('.ml-rename-input');
   if(!inp)return;
   inp.style.background='transparent';
   inp.style.border='none';
-  renameEvt(inp.getAttribute('data-oldname'),inp.value,inp.getAttribute('data-sid'));
-  inp.setAttribute('data-oldname',inp.value.trim()||inp.getAttribute('data-oldname'));
+  renameMailing(inp.getAttribute('data-mid'),inp.value);
 });
 document.addEventListener('keydown',function(e){
   if(e.key==='Enter'){
-    const inp=e.target.closest('.evt-rename-input');
+    const inp=e.target.closest('.evt-rename-input,.ml-rename-input');
     if(inp)inp.blur();
   }
 });
@@ -2737,23 +2736,6 @@ function renderMailingCommBar(){
   el.innerHTML=html;
 }
 
-function startRenameMailing(e,mid){
-  e.stopPropagation();
-  var m=mailings.find(function(x){return x.id===mid;});
-  if(!m)return;
-  var span=document.getElementById('mlname_'+mid);
-  if(!span)return;
-  var inp=document.createElement('input');
-  inp.value=m.nom;
-  inp.style.cssText='font-size:14px;font-weight:600;border:none;outline:none;background:transparent;border-bottom:1.5px solid var(--ac);color:var(--tx);min-width:120px;width:'+(span.offsetWidth||200)+'px;max-width:320px;';
-  span.replaceWith(inp);inp.focus();inp.select();
-  function save(){var v=inp.value.trim();if(v&&v!==m.nom){m.nom=v;persist();}renderMailing();}
-  inp.addEventListener('blur',save);
-  inp.addEventListener('keydown',function(ev){
-    if(ev.key==='Enter'){ev.preventDefault();inp.removeEventListener('blur',save);save();}
-    if(ev.key==='Escape'){ev.preventDefault();inp.removeEventListener('blur',save);renderMailing();}
-  });
-}
 function renderMailing(){
   renderMailingCommBar();
   var openMl=_saveOpen('ml_m_');
@@ -2791,8 +2773,15 @@ function renderMailing(){
         +'<div style="flex:1;min-width:0">'
           +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
             +'<i class="ti ti-mail" style="color:var(--ac);font-size:14px;flex-shrink:0"></i>'
-            +'<span id="mlname_'+m.id+'" style="font-size:14px;font-weight:600">'+m.nom+'</span>'
-            +'<button class="abtn" onclick="startRenameMailing(event,\''+m.id+'\')" title="Renommer la campagne" style="padding:2px 4px;flex-shrink:0;opacity:0.5"><i class="ti ti-pencil" style="font-size:12px;pointer-events:none"></i></button>'
+            +'<input class="ml-rename-input"'
+              +' data-mid="'+m.id+'"'
+              +' value="'+m.nom+'"'
+              +' size="'+Math.max(10,m.nom.length+2)+'"'
+              +' style="font-size:14px;font-weight:600;border:none;background:transparent;'
+                +'outline:none;min-width:80px;max-width:400px;padding:2px 4px;border-radius:4px;cursor:text;font-family:var(--fn);color:var(--tx)"'
+              +' oninput="this.size=Math.max(10,this.value.length+2)"'
+              +' onclick="event.stopPropagation()">'
+            +'<i class="ti ti-pencil" style="font-size:11px;color:var(--txm);flex-shrink:0"></i>'
             +(m.assigne?'<span style="font-size:11px;color:#1AAE6A;flex-shrink:0">· '+m.assigne+'</span>':'')
             +(m.date?'<span style="font-size:11px;color:var(--tx2);flex-shrink:0"><i class="ti ti-calendar" style="font-size:10px;margin-right:3px"></i>'+new Date(m.date+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})+'</span>':'')
           +'</div>'
