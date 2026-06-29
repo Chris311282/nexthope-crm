@@ -226,6 +226,7 @@ tr:hover td{background:var(--bg2)}
             <button class="submenu-item" onclick="go('societes')"><i class="ti ti-building"></i>Affichage par société</button>
           </div>
         </div>
+        <button class="tab" id="tab-annuaire" onclick="go('annuaire')"><i class="ti ti-address-book"></i>Annuaire</button>
         <div class="tab-dropdown">
           <button class="tab" id="tab-events"><i class="ti ti-speakerphone"></i>Campagne <i class="ti ti-chevron-down" style="font-size:10px;margin-left:2px"></i></button>
           <div class="tab-submenu">
@@ -322,6 +323,52 @@ tr:hover td{background:var(--bg2)}
       <div id="societes-empty" class="empty" style="display:none">
         <i class="ti ti-building" style="font-size:36px;display:block;margin-bottom:10px"></i>Aucune société
       </div>
+    </div>
+  </div>
+
+  <!-- ANNUAIRE -->
+  <div id="sec-annuaire" class="sec">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:10px">
+        <div class="slabel" style="margin-bottom:0">Annuaire des contacts</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button id="ann-dup-btn" class="btno" onclick="openDupModal()" style="display:none;font-size:11px;padding:3px 10px;color:#e85c00;border-color:#e85c00"></button>
+          <button id="ann-soc-dup-btn" class="btno" onclick="openSocieteDupModal()" style="display:none;font-size:11px;padding:3px 10px;color:#7b2fbe;border-color:#7b2fbe"></button>
+          <button class="btna" onclick="openAddContactModal()"><i class="ti ti-user-plus"></i>Nouveau contact</button>
+        </div>
+      </div>
+      <div class="filters" style="flex-wrap:wrap;gap:6px">
+        <input type="text" id="ann-search" placeholder="🔍 Rechercher par nom, société, email…" oninput="annView==='societe'?renderAnnuaireParSociete():renderAnnuaire()" style="min-width:220px">
+        <button id="annf-all" class="btno" onclick="setAnnFilter('all')" style="font-size:11px;padding:3px 10px">Tous</button>
+        <button id="annf-actif" class="btno" onclick="setAnnFilter('actif')" style="font-size:11px;padding:3px 10px">En poste</button>
+        <button id="annf-inactif" class="btno" onclick="setAnnFilter('inactif')" style="font-size:11px;padding:3px 10px">Changé de poste</button>
+        <span style="flex:1"></span>
+        <button id="ann-view-contact" class="btno" onclick="setAnnView('contact')" style="font-size:11px;padding:3px 10px;background:var(--ac);color:#fff;border-color:var(--ac)"><i class="ti ti-list" style="font-size:11px;margin-right:3px"></i>Par contact</button>
+        <button id="ann-view-societe" class="btno" onclick="setAnnView('societe')" style="font-size:11px;padding:3px 10px"><i class="ti ti-building" style="font-size:11px;margin-right:3px"></i>Par société</button>
+      </div>
+      <div id="ann-stats" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;margin-top:10px"></div>
+      <!-- Vue par contact -->
+      <div id="ann-contact-view">
+        <div class="twrap">
+          <table>
+            <thead><tr>
+              <th style="width:20%">Nom</th>
+              <th style="width:18%">Société active</th>
+              <th style="width:14%">Poste</th>
+              <th style="width:19%">Email</th>
+              <th style="width:10%">Tél</th>
+              <th style="width:9%">Statut</th>
+              <th style="width:10%;text-align:right">Actions</th>
+            </tr></thead>
+            <tbody id="ann-body"></tbody>
+          </table>
+        </div>
+        <div id="ann-empty" class="empty" style="display:none">
+          <i class="ti ti-address-book" style="font-size:36px;display:block;margin-bottom:10px;color:var(--ac)"></i>Aucun contact dans l'annuaire
+        </div>
+      </div>
+      <!-- Vue par société -->
+      <div id="ann-societe-view" style="display:none"></div>
     </div>
   </div>
 
@@ -454,19 +501,16 @@ tr:hover td{background:var(--bg2)}
       </div>
       <div class="fg"><label class="flabel">Date de relance</label><input id="o-reldate" type="date"></div>
       <div class="fg"><label class="flabel">Température</label>
-        <select id="o-urgence">
-          <option value="vert">🔵 Froid</option>
-          <option value="amber">🟠 Tiède</option>
-          <option value="rouge">🔴 Chaud</option>
+        <select id="o-temperature">
+          <option value="froid">🔵 Froid</option>
+          <option value="tiede" selected>🟠 Tiède</option>
+          <option value="chaud">🔴 Chaud</option>
         </select>
       </div>
       <div class="fg"><label class="flabel">Assigné à</label>
         <select id="o-assigne"><option value="">--</option>
           <option>Nickie</option><option>Tsilavo</option><option>Fabio</option>
         </select>
-      </div>
-      <div class="fg"><label class="flabel">Valeur estimée (Ar)</label>
-        <input id="o-valeur" type="number" min="0" placeholder="0">
       </div>
       <div class="fg full"><label class="flabel">Notes</label>
         <textarea id="o-notes"></textarea>
@@ -605,8 +649,8 @@ tr:hover td{background:var(--bg2)}
     <div class="fgrid">
       <div class="fg"><label class="flabel">Étape</label>
         <select id="e-stage" onchange="updateActionList('e-action','e-stage')">
-          <option value="Analyse besoin">Analyse besoin</option>
-          <option value="Démo">Démo</option>
+          <option value="Qualification besoin">Qualification besoin</option>
+          <option value="Démonstration">Démonstration</option>
           <option value="Test préliminaire">Test préliminaire</option>
           <optgroup label="─── Terminé ───">
             <option value="Opportunité">↳ Opportunité</option>
@@ -621,19 +665,17 @@ tr:hover td{background:var(--bg2)}
       </div>
       <div class="fg"><label class="flabel">Date de relance</label><input id="e-reldate" type="date"></div>
       <div class="fg"><label class="flabel">Température</label>
-        <select id="e-urgence">
-          <option value="vert">🔵 Froid</option>
-          <option value="amber">🟠 Tiède</option>
-          <option value="rouge">🔴 Chaud</option>
+        <select id="e-temperature">
+          <option value="froid">🔵 Froid</option>
+          <option value="tiede">🟠 Tiède</option>
+          <option value="chaud">🔴 Chaud</option>
         </select>
       </div>
       <div class="fg"><label class="flabel">Assigné à</label>
-        <select id="e-assigne"></option>
-            <option>Nickie</option><option>Tsilavo</option><option>Fabio</option>
-          </select>
-      </div>
-      <div class="fg"><label class="flabel">Valeur estimée (Ar)</label>
-        <input id="e-valeur" type="number" min="0" placeholder="0">
+        <select id="e-assigne">
+          <option value="">--</option>
+          <option>Nickie</option><option>Tsilavo</option><option>Fabio</option>
+        </select>
       </div>
       <div class="fg full"><label class="flabel">Solution</label>
         <select id="e-solution"><option value="">-- Solution --</option>
@@ -667,6 +709,8 @@ function load(){
       opps=toArr(d.opps||[]);
       mailings=toArr(d.mailings||[]);
       evtData=d.evtData||{};
+      annuaire=toArr(d.annuaire||[]);
+      secteurs=d.secteurs||{};
     }
   }catch(e){}
   if(!participants.length) participants=JSON.parse(JSON.stringify(SEED_P));
@@ -702,7 +746,9 @@ function syncWithFirebase(){
     opps=toArr(d.opps);
     mailings=toArr(d.mailings);
     evtData=d.evtData||{};
-    try{localStorage.setItem('nh_crm_bak',JSON.stringify({participants:participants,pistes:pistes,opps:opps,mailings:mailings,evtData:evtData}));}catch(e){}
+    annuaire=toArr(d.annuaire);
+    secteurs=d.secteurs||{};
+    try{localStorage.setItem('nh_crm_bak',JSON.stringify({participants:participants,pistes:pistes,opps:opps,mailings:mailings,evtData:evtData,annuaire:annuaire,secteurs:secteurs}));}catch(e){}
     setSyncStatus('ok');
     applyNorm(); refreshTab(); startRealtimeSync();
   }).catch(function(e){
@@ -744,6 +790,8 @@ function startRealtimeSync(){
     pistes=toArr(d.pistes);
     opps=toArr(d.opps);
     mailings=toArr(d.mailings);
+    annuaire=toArr(d.annuaire);
+    secteurs=d.secteurs||{};
     if(_pendingMailValidations.size>0){
       mailings.forEach(function(m){
         (m.contacts||[]).forEach(function(c){
@@ -755,7 +803,7 @@ function startRealtimeSync(){
         });
       });
     }
-    try{localStorage.setItem('nh_crm_bak',JSON.stringify({participants:participants,pistes:pistes,opps:opps,mailings:mailings,evtData:evtData}));}catch(e){}
+    try{localStorage.setItem('nh_crm_bak',JSON.stringify({participants:participants,pistes:pistes,opps:opps,mailings:mailings,evtData:evtData,annuaire:annuaire,secteurs:secteurs}));}catch(e){}
     applyNorm(); refreshTab();
   });
 }
@@ -830,32 +878,33 @@ function refreshTab(){
   if(curTab==='dashboard')renderDash();
   else if(curTab==='pistes')renderPistes();
   else if(curTab==='societes')renderSocietes();
+  else if(curTab==='annuaire')renderAnnuaire();
   else if(curTab==='events')renderEvents();
   else if(curTab==='mailing')renderMailing();
   else if(curTab==='stats-events')renderStatsEvents();
   else if(curTab==='stats-crm')renderStatsCrm();
 }
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
-const PIPE_STAGES=['Analyse besoin','Démo','Test préliminaire'];
+const PIPE_STAGES=['Qualification besoin','Démonstration','Test préliminaire'];
 const TERM_STAGES=['Opportunité','À creuser','En veille','Abandonné'];
 const ALL_STAGES=[...PIPE_STAGES,...TERM_STAGES];
-const DISPLAY_STAGES=['Analyse besoin','Démo','Test préliminaire','Terminé'];
+const DISPLAY_STAGES=['Qualification besoin','Démonstration','Test préliminaire','Terminé'];
 
 const STAGE_ACTIONS={
-  'Analyse besoin':['Envoyer questionnaire besoin','Appel de découverte','Envoyer synthèse','Demander informations complémentaires'],
-  'Démo':['Préparer scénario de démo','Envoyer invitation démo','Réaliser la démo','Envoyer compte-rendu démo'],
-  'Test préliminaire':['Lancer le test','Suivi hebdomadaire','Bilan intermédiaire','Présenter les résultats'],
+  'Qualification besoin':['A relancer','Rdv complémentaire à faire','Questions à envoyer'],
+  'Démonstration':['A relancer'],
+  'Test préliminaire':['A relancer','Tests complémentaires à faire'],
   'Opportunité':[],'À creuser':[],'En veille':['Relance dans 3 mois','Relance dans 6 mois'],'Abandonné':[]
 };
 
 const SBADGE={
-  'Analyse besoin':'b-qual','Démo':'b-poc',
+  'Qualification besoin':'b-qual','Démonstration':'b-poc',
   'Test préliminaire':'b-rdvp',
   'Terminé':'b-veille',
   'Opportunité':'b-concluant','À creuser':'b-acreuser',
   'En veille':'b-veille','Abandonné':'b-abandonne'
 };
-const PIPE_COLORS={'Analyse besoin':'#1A7AEA','Démo':'#7A1AEA','Test préliminaire':'#5b21b6','Terminé':'#444'};
+const PIPE_COLORS={'Qualification besoin':'#1A7AEA','Démonstration':'#7A1AEA','Test préliminaire':'#5b21b6','Terminé':'#444'};
 const TERM_COLORS={'Opportunité':'#1AAE6A','À creuser':'#c97a10','En veille':'#888780','Abandonné':'#E24B4A'};
 
 const COMMS=['Nickie','Tsilavo','Fabio'];
@@ -871,7 +920,7 @@ const EVT_DEF={
 const SEED_P=[{"id": "p_razafind4738", "nom": "RAZAFINDRATOANDRO Rodilson", "societe": "RioTinto | QMM", "poste": "", "tel": "261344904761", "email": "jacquesrodlisonber@riotinto.com", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_raobelin5139", "nom": "RAOBELINA Loïc", "societe": "BNI Madagascar", "poste": "", "tel": "261387376764", "email": "loic.raobelina@bni.mg", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_rakotoma5121", "nom": "RAKOTOMAMONJY Rindra", "societe": "IZILI", "poste": "", "tel": "261349940710", "email": "rrakotomamonjy@iziligroup.com", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_andriana4902", "nom": "ANDRIANAVALONA Joseph", "societe": "MSC Madagascar S.A", "poste": "", "tel": "261340718004", "email": "joseph.andrianavalona@msc.com", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_nguyenva3648", "nom": "NGUYEN VAN JASON Fahasoavana", "societe": "Ulys SA", "poste": "", "tel": "261321701594", "email": "jason.nguyen@habibo.mg", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_razanako4993", "nom": "RAZANAKOLONA JHON RIO", "societe": "NPAKADIN SERVICES", "poste": "", "tel": "261321895386", "email": "razanakolona.rio@npakadin.mg", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_rakotond5923", "nom": "RAKOTONDRAMANANA  Ndretsa", "societe": "Société Financières d'Investissement", "poste": "", "tel": "261370590010", "email": "nrakotondramanana@sfi.mg", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_ravoavyt8099", "nom": "Ravoavy  Tovo", "societe": "MEF", "poste": "", "tel": "261340030577", "email": "tovoravoavy@yahoo.fr", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_tianariv7634", "nom": "TIANARIVO Athanase Eddynho", "societe": "MEF/DSI", "poste": "", "tel": "261340203259", "email": "athantiane@gmail.com", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_lalaarso9099", "nom": "LALA ARSON  Zo Ny Aina", "societe": "MEF", "poste": "", "tel": "261340551414", "email": "dsi@mef.gov.mg", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_etonofen2594", "nom": "ETONO Fenoasy", "societe": "TALYS GROUPE", "poste": "", "tel": "261389384578", "email": "fenoasy.etono@talys.mg", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_rakotoma3415", "nom": "RAKOTOMALALA Tsilavo", "societe": "Institut Pasteur de Madagascar", "poste": "", "tel": "261320741364", "email": "tsilavor@pasteur.mg", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_ranaivos2079", "nom": "Ranaivoson Mi", "societe": "WWF Madagascar", "poste": "", "tel": "261384980115", "email": "amranaivoson@wwf.mg", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_rakotoni6227", "nom": "RAKOTONINDRIANA Eric Ny Aina", "societe": "Axian Energy", "poste": "", "tel": "261340705022", "email": "eric.rakotonindriana@axian-group.com", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_lawsonva5639", "nom": "Lawson  Valdano", "societe": "BGFIBank", "poste": "", "tel": "261335368614", "email": "ngadivaldano@gmail.com", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_andriama1106", "nom": "ANDRIAMADISON Herilano Rijaniaina", "societe": "AccesBanque Madagascar", "poste": "", "tel": "261320351959", "email": "rijaniaina.andriamadison@accesbanque.mg", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_rakotoma3675", "nom": "RAKOTOMANANA Manoa", "societe": "ACEP Madagascar", "poste": "", "tel": "261340502858", "email": "manoa.rakotomanana@acep.mg", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_rakotoso2771", "nom": "RAKOTOSON nantenaina", "societe": "ADES", "poste": "", "tel": "261321229756", "email": "nrakotosonsolo@gmail.com", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_randrian4356", "nom": "RANDRIANAIVOMANANA Henintsoa", "societe": "ADM VALUE ASSURANCES", "poste": "", "tel": "261383532225", "email": "rhenintsoa@meilleurtaux.com", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_rasoloma6212", "nom": "RASOLOMAHEFA Tahiana", "societe": "INVISO GROUP", "poste": "", "tel": "261380637472", "email": "tahiana.rasolomahefa@inviso-group.com", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_rakotoar8159", "nom": "Rakotoarimanana  Judi", "societe": "LPSA", "poste": "", "tel": "261372500230", "email": "judi.rakotoarimanana@logpetro.com", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_randriam2109", "nom": "RANDRIAMIADANA Arhtur Mickael", "societe": "NUMEN Madagascar", "poste": "", "tel": "261341105640", "email": "rmic@numen.mg", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_randrian4907", "nom": "RANDRIANOELINA Sedra", "societe": "Ulys SA", "poste": "", "tel": "261321701596", "email": "sedra.randrianoelina@Habibo.mg", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_ramalanj7361", "nom": "RAMALANJAONA  Harilaza", "societe": "VIVO ENERGY", "poste": "", "tel": "32 07 427 30", "email": "H.RAMALANJAONA@vivoenergy.com", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_rafamand8735", "nom": "Rafam'Andrianjafy Bakoharimina", "societe": "SMARTONE", "poste": "", "tel": "261321217212", "email": "bako.raf@smartone.ai", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_rakotoza3639", "nom": "Rakotozafy  Njaka", "societe": "Connecteo", "poste": "", "tel": "261340032400", "email": "Njaka.rakotozafy@connecteo.mg", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_rabemana6262", "nom": "RABEMANANTSOA Yannick Stéphane", "societe": "MPL", "poste": "", "tel": "261341755386", "email": "yann@mada-poidslourds.com", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_razafind4628", "nom": "RAZAFINDRALAMBO Andriamanamisata", "societe": "RAVINALA AIRPORTS", "poste": "", "tel": "261344933333", "email": "misa.razafindralambo@ravinala-airports.aero", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_rabehant5418", "nom": "RABEHANTA Hajatiana", "societe": "RAVINALA AIRPORTS", "poste": "", "tel": "261344133444", "email": "haja.rabehanta@ravinala-airports.aero", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_rakotobe1564", "nom": "Rakotobearison Michaël", "societe": "Ambatovy", "poste": "", "tel": "261323783941", "email": "michael.rakotobearison@ambatovy.mg", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_rajaonar3601", "nom": "RAJAONARIVO Irina Loharano Hendry", "societe": "AGL Madagascar", "poste": "", "tel": "261343485056", "email": "hendry.rajaonarivo@aglgroup.com", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_ramamonj8798", "nom": "RAMAMONJISOA Njara", "societe": "GROUPE INVISO", "poste": "", "tel": "261380727205", "email": "njara.ramamonjisoa@inviso-group.com", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_rakotond1011", "nom": "RAKOTONDRAVELO Nantenaina", "societe": "SMMEC", "poste": "", "tel": "261333720714", "email": "di@smmec.mg", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_rakotoma1139", "nom": "RAKOTOMALALA Christian", "societe": "Smartone", "poste": "", "tel": "261320317259", "email": "christian.rak@smartone.ai", "evtnom": "Forti x NextHope", "evtdate": "2026-05-28", "converted": false, "piste_id": null}, {"id": "p_raobelin3114", "nom": "RAOBELINA Loïc", "societe": "BNI Madagascar", "poste": "Head of Infrastructure", "tel": "038 73 767 64", "email": "loic.raobelina@bni.mg", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_miandris5384", "nom": "MIANDRISOA  Gabriella Efralda", "societe": "Orange Madagascar", "poste": "Chef de service Datacenter IP", "tel": "+261320787541", "email": "efralda.miandrisoa@orange.com", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_rabehava4690", "nom": "RABEHAVANA Tahiry Aris Emmanuel", "societe": "Izili Madagascar", "poste": "Chargé IT", "tel": "0381152479", "email": "trabehavana@iziligroup.com", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_razanako2159", "nom": "RAZANAKOLONA JHON RIO", "societe": "NPAKADIN", "poste": "Technicien SUpport", "tel": "0321895383", "email": "razanakolonajhonrio50@gmail.com", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_etonofen6334", "nom": "ETONO Fenoasy", "societe": "GROUPE TALYS", "poste": "RSSI", "tel": "0389384578", "email": "fenoasy.etono@talys.mg", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_rakotond3561", "nom": "RAKOTONDRAMANANA Rijaniaina", "societe": "ACEP Madagascar", "poste": "Deputy IT Director", "tel": "0380580001", "email": "rija.rakotondramanana@acep.mg", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_randriam8095", "nom": "RANDRIAMANANTENA Ina Johannick", "societe": "SYMRISE MADAGASCAR", "poste": "Directeur IT", "tel": "032 05 222 60", "email": "Johannick.Randriamanantena@symrise.com", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_rasamoel3619", "nom": "RASAMOELINA Mahefasoa", "societe": "Direction Générale des impôts", "poste": "Informaticien", "tel": "0342045712", "email": "ndrialala@gmail.com", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_rabialah8613", "nom": "Rabialahy Flavien", "societe": "Habibo Group", "poste": "Responsable Infrastrucutre et réseaux", "tel": "0321700228", "email": "flavien.rabialahy@habibo.mg", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_rakotoma6668", "nom": "RAKOTOMALALA Hery Tiana", "societe": "PAMF", "poste": "Chargé de la sécurité du Système d'information", "tel": "0321298703", "email": "r.hery@pamf.mg", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_ratovofe5996", "nom": "RATOVO Fenosoa", "societe": "ACCESBANQUE MADAGASACAR", "poste": "Network Infrastructure and Security Operations Manager", "tel": "0320351960", "email": "fenosoa.ratovo@accesbanque.mg", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_manahadr7411", "nom": "MANAHADRAI-ANDRIANTAFIKA Todisoa Jedi", "societe": "Acces Banque Madagascar", "poste": "System Infrastructure and Data Center Operation Manager", "tel": "+261320351525", "email": "jedi.andriantafika@accesbanque.mg", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_ratsiand1597", "nom": "RATSIANDAVANA Harena", "societe": "Accès Banque Madagascar", "poste": "Junior Information Security Engineer", "tel": "0321253156", "email": "harena.ratsiandavana@accesbanque.mg", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_randriat6986", "nom": "RANDRIATAHINARIMANANA Andrinirina Nathanael", "societe": "MEF", "poste": "Chef de service du réseau, du système et de la base de données", "tel": "0340554168", "email": "randriatahinarimananaa@gmail.com", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_ratoavin7012", "nom": "RATOAVINJANAHARY  Jean Raymond", "societe": "Team Sora", "poste": "Technicien en Informatique", "tel": "0380902105", "email": "jeanraymond601@gmail.com", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_andriant4544", "nom": "ANDRIANTSILAVO Irinohatra Manohisoa", "societe": "CONNECTEO", "poste": "Support IT", "tel": "0340032426", "email": "irinohatra.manou@gmail.com", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_rajaonar1310", "nom": "RAJAONARIVO Andriatsimilavo", "societe": "CNAPS", "poste": "RSSI", "tel": "000000000000", "email": "andriatsimilavo.rajaonarivo@cnaps.mg", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_davidrak2679", "nom": "David Rakotomanana", "societe": "LUCEO", "poste": "Coordinateur de projet IT", "tel": "0340202863", "email": "david.rakotomanana@sirr.mg", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_rakotoar1517", "nom": "RAKOTOARISOA vonjimampianina", "societe": "Ravinala airports", "poste": "Chef de Departement Infra & Prod IT", "tel": "0344433417", "email": "vonji.rakotoarisoa@ravinala-airports.aero", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_rakotoso7628", "nom": "RAKOTOSON  Nantenaina", "societe": "Ades", "poste": "Chef de département Systeme d’Information", "tel": "0321229756", "email": "nantenaina.rakotoson@ades-solaire.org", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_rakotoni4508", "nom": "RAKOTONIRINA Mickaël Yannick", "societe": "Madagascar National Parks", "poste": "Responsable d’Exploitation et de Gestion des Opérations Informatiques", "tel": "0380940005", "email": "yannick_regoi@mnparks.mg", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_randriam5333", "nom": "RANDRIAMAMEFIARIVO Asina Gérard", "societe": "BNI MADAGASCAR", "poste": "Analyst Information Security", "tel": "0340030864", "email": "gerard.randriamamefiarivo@bni.mg", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_ralaivoa5414", "nom": "RALAIVOAVY  Romeo", "societe": "BGFIBank", "poste": "Admin Reseau et Telecoms", "tel": "0335368367", "email": "romeo.ralaivoavy@gmail.com", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_rakotoni7490", "nom": "RAKOTONINDRIANA Eric Ny Aina", "societe": "Axian Energy", "poste": "IT OPERATIONS SPECIALIST", "tel": "0340705022", "email": "eric.rakotonindriana@axian-group.com", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_rakotoni2601", "nom": "RAKOTONIRINA Nomenjanahary", "societe": "ALPHA CIMENT", "poste": "Informaticien", "tel": "0321194290", "email": "nomenjanahary.rakotonirina@alphaciment.com", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}, {"id": "p_rajaonah1209", "nom": "RAJAONAH Hervé", "societe": "ALPHA CIMENT", "poste": "ADMIN ERP", "tel": "0346288420", "email": "herve.andriamalala@alphaciment.com", "evtnom": "Cloudflare x NextHope", "evtdate": "2026-05-06", "converted": false, "piste_id": null}];
 
 // ── STATE ──────────────────────────────────────────────────────────────────
-let participants=[], pistes=[], opps=[], mailings=[], evtData={}, charts={};
+let participants=[], pistes=[], opps=[], mailings=[], evtData={}, charts={}, annuaire=[], secteurs={};
 let editOppId=null, convPartId=null, curTab='dashboard';
 
 function updateTopbar(){}
@@ -882,7 +931,7 @@ function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2
 function persist(){
   if(!currentUser){console.warn('persist: no user');return;}
   if(fbSyncing){console.warn('persist: sync in progress, skipped');return;}
-  var data={participants:participants,pistes:pistes,opps:opps,mailings:mailings,evtData:evtData};
+  var data={participants:participants,pistes:pistes,opps:opps,mailings:mailings,evtData:evtData,annuaire:annuaire,secteurs:secteurs};
   // Always save locally first
   try{localStorage.setItem('nh_crm_bak',JSON.stringify(data));}catch(e){}
   setSyncStatus('saving');
@@ -939,7 +988,7 @@ function go(t){
   document.querySelectorAll('.submenu-item').forEach(b=>b.classList.remove('active'));
   document.getElementById('sec-'+t).classList.add('active');
   // Highlight correct tab
-  const tabMap={'dashboard':0,'pistes':1,'societes':1,'events':2,'stats':3};
+  const tabMap={'dashboard':0,'pistes':1,'societes':1,'annuaire':2,'events':3,'mailing':3,'stats-events':4,'stats-crm':4,'stats':4};
   const tabIdx=tabMap[t];
   if(tabIdx!==undefined){
     const allTabs=document.querySelectorAll('.tab');
@@ -958,6 +1007,7 @@ function go(t){
   if(t==='dashboard')renderDash();
   if(t==='pistes'){renderPistes();fillSelect('piste-event',getEvtNames());}
   if(t==='societes')renderSocietes();
+  if(t==='annuaire')renderAnnuaire();
   if(t==='events')renderEvents();
   if(t==='mailing')renderMailing();
   if(t==='stats-events')renderStatsEvents();
@@ -1020,10 +1070,10 @@ function renderDash(){
   pipeEl.innerHTML=DISPLAY_STAGES.map(s=>{
     const list=bs[s]||[];
     const color=PIPE_COLORS[s]||'#444';
-    // "Analyse besoin" also shows pistes without a stage (not yet in pipeline)
-    const extraCards=s==='Analyse besoin'?pistesWithoutStage.map(mkCard).join('') :'';
+    // "Qualification besoin" also shows pistes without a stage (not yet in pipeline)
+    const extraCards=s==='Qualification besoin'?pistesWithoutStage.map(mkCard).join('') :'';
     const mainCards=list.map(mkCard).join('');
-    const total=list.length+(s==='Analyse besoin'?pistesWithoutStage.length:0);
+    const total=list.length+(s==='Qualification besoin'?pistesWithoutStage.length:0);
     const cards=mainCards+extraCards+(total===0?'<div style="font-size:10px;color:var(--txm)">—</div>':'');
     return'<div class="pcol" data-stage="'+s+'" style="border-left:3px solid '+color+'">'
       +'<div class="pchd"><span>'+s+'</span><span class="pccnt">'+total+'</span></div>'
@@ -1035,7 +1085,7 @@ function renderDash(){
 
   // Actions à faire
   const actionsEl=document.getElementById('dash-actions');
-  const STAGE_ACTIONS_ORDER=['Analyse besoin','Démo','Test préliminaire'];
+  const STAGE_ACTIONS_ORDER=['Qualification besoin','Démonstration','Test préliminaire'];
 
   // Regroup actions by urgency category
   const retard=[], aujourdhui=[], prochains=[], sansDates=[];
@@ -1281,6 +1331,531 @@ function delEvent(evtnom){
   persist();renderEvents();renderDash();
 }
 
+// ── ANNUAIRE ───────────────────────────────────────────────────────────────
+var annFilter='all', annView='contact', annSocLetter='A', _annEditId=null;
+const SECTEURS=['Télécom / IT','Banque / Finance','Assurance','Énergie / Utilities',
+  'Hôtellerie / Tourisme','Santé','Industrie / Agro-industrie','Distribution / Commerce',
+  'ONG / International','Ministère / Administration','Éducation / Formation','Services / Conseil','Autre'];
+const SECT_COLORS={'Télécom / IT':'#1A7AEA','Banque / Finance':'#A01864','Assurance':'#7B2FBE',
+  'Énergie / Utilities':'#E8A000','Hôtellerie / Tourisme':'#00A89D','Santé':'#E85C5C',
+  'Industrie / Agro-industrie':'#6B8E23','Distribution / Commerce':'#E85C00',
+  'ONG / International':'#1AAE6A','Ministère / Administration':'#5C6BC0',
+  'Éducation / Formation':'#26A69A','Services / Conseil':'#78909C','Autre':'#9E9E9E'};
+function autoSectorize(nom){
+  var n=(nom||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
+  if(/NEXTHOPE|TELMA|ORANGE|AIRTEL|BLUE.?LINE|GULFSAT|ISOCEL|TELECOM|INTERNET|ISP/.test(n))return'Télécom / IT';
+  if(/BANQUE|BNI|BFV|MCB|BMOI|CREDIT|FINANCE|SGBM|BOA|SOC.?GEN|SGB|ACCES/.test(n))return'Banque / Finance';
+  if(/ASSURANCE|ARO|HAVANA|MAMA/.test(n))return'Assurance';
+  if(/JIRAMA|ENERGIE|POWER|SOLAR|HYDRO|ENEO|ENERIA/.test(n))return'Énergie / Utilities';
+  if(/HOTEL|LODGE|RESORT|TOURISME|COLBERT|CARLTON|HILTON|RADISSON|IBIS/.test(n))return'Hôtellerie / Tourisme';
+  if(/HOPITAL|CLINIQUE|PHARMA|SANTE|HEALTH|MEDICAL/.test(n))return'Santé';
+  if(/USINE|MANUFACTUR|INDUSTRI|PRODUCTION|SOAMIXX|COLAS|AGRO/.test(n))return'Industrie / Agro-industrie';
+  if(/SHOPRITE|JUMBO|SCORE|COMMERCE|DISTRIBUT|IMPORT|EXPORT|TRADE/.test(n))return'Distribution / Commerce';
+  if(/UNICEF|GIZ|AFD|USAID|WFP|PNUD|UNDP|UNESCO|OMS|WHO|NGO|ONG|CARE|PACT/.test(n))return'ONG / International';
+  if(/MINISTERE|GOUVERN|PREFECT|MAIRIE|DIR.?GEN|ETAT|ADMIN/.test(n))return'Ministère / Administration';
+  if(/UNIVERSITE|ECOLE|FORMATION|EDUCATION|LYCEE|COLLEGE|ACADEM/.test(n))return'Éducation / Formation';
+  if(/CONSEIL|CONSULT|AUDIT|KPMG|MAZARS|DELOITTE|TALYS|GROUPE/.test(n))return'Services / Conseil';
+  return'Autre';
+}
+function setSecteur(sel){
+  var nom=sel.getAttribute('data-soc');if(!nom)return;
+  secteurs[nom]=sel.value;persist();renderAnnuaireParSociete();
+}
+function _selAutoWidth(sel){
+  var opt=sel.options[sel.selectedIndex];if(!opt)return;
+  var cv=_selAutoWidth.cv||(_selAutoWidth.cv=document.createElement('canvas'));
+  var ctx=cv.getContext('2d');
+  ctx.font='10px '+(getComputedStyle(document.body).fontFamily||'sans-serif');
+  sel.style.width=Math.round(ctx.measureText(opt.text).width+26)+'px';
+}
+function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function titleCase(s){return(s||'').split(/\s+/).map(function(w){return w?w[0].toUpperCase()+w.slice(1).toLowerCase():'';}).join(' ');}
+function normalizePhone(raw){
+  if(!raw)return'';
+  var d=raw.trim().replace(/[\s\.\-\(\)]/g,'');
+  var plus=d.startsWith('+');var digits=plus?d.slice(1):d;
+  if(/^0[1-9]/.test(digits))digits='261'+digits.slice(1);
+  if(digits.startsWith('261')&&digits.length===12){var l=digits.slice(3);return'+261 '+l.slice(0,2)+' '+l.slice(2,4)+' '+l.slice(4,7)+' '+l.slice(7,9);}
+  if(digits.startsWith('33')&&digits.length===11){var l=digits.slice(2);return'+33 '+l[0]+' '+l.slice(1,3)+' '+l.slice(3,5)+' '+l.slice(5,7)+' '+l.slice(7,9);}
+  if(!digits)return'';return'+'+(plus?''+digits:digits);
+}
+function _splitNameAnn(full){
+  if(!full||(full=full.trim())==='')return{prenom:'',nom:''};
+  var toks=full.split(/\s+/);
+  if(toks.length===1)return{prenom:'',nom:toks[0].toUpperCase()};
+  var caps=[],mixed=[];
+  toks.forEach(function(t){(t.length>=2&&t===t.toUpperCase()&&/[A-ZÀÂÆÇÉÈÊËÎÏÔŒÙÛÜŸ]/.test(t)?caps:mixed).push(t);});
+  if(caps.length&&mixed.length)return{prenom:mixed.map(titleCase).join(' '),nom:caps.join(' ')};
+  if(toks[0].length<toks[toks.length-1].length)return{prenom:titleCase(toks[0]),nom:toks.slice(1).join(' ').toUpperCase()};
+  return{prenom:titleCase(toks[toks.length-1]),nom:toks.slice(0,-1).join(' ').toUpperCase()};
+}
+function annDisplayName(c){return c.prenom?c.prenom+' '+c.nom:(c.nom||'');}
+
+function setAnnFilter(f){annFilter=f;renderAnnuaire();}
+function setAnnView(v){
+  annView=v;
+  var btnC=document.getElementById('ann-view-contact');
+  var btnS=document.getElementById('ann-view-societe');
+  if(btnC){btnC.style.background=v==='contact'?'var(--ac)':'';btnC.style.color=v==='contact'?'#fff':'';btnC.style.borderColor=v==='contact'?'var(--ac)':'';}
+  if(btnS){btnS.style.background=v==='societe'?'var(--ac)':'';btnS.style.color=v==='societe'?'#fff':'';btnS.style.borderColor=v==='societe'?'var(--ac)':'';}
+  var cv=document.getElementById('ann-contact-view');var sv=document.getElementById('ann-societe-view');
+  if(cv)cv.style.display=v==='contact'?'':'none';
+  if(sv)sv.style.display=v==='societe'?'':'none';
+  if(v==='societe')renderAnnuaireParSociete();else renderAnnuaire();
+}
+
+function _annFilteredList(q){
+  return annuaire.filter(function(c){
+    var hasActif=(c.postes||[]).some(function(p){return p.actif;});
+    if(annFilter==='actif'&&!hasActif)return false;
+    if(annFilter==='inactif'&&hasActif)return false;
+    if(q){
+      var txt=annDisplayName(c).toLowerCase()+(c.tel||'').toLowerCase()+(c.postes||[]).map(function(p){return' '+(p.societe||'')+' '+(p.email||'')+' '+(p.poste||'');}).join('').toLowerCase();
+      if(!txt.includes(q))return false;
+    }
+    return true;
+  }).sort(function(a,b){return(a.nom||'').localeCompare(b.nom||'','fr');});
+}
+
+function renderAnnuaire(){
+  if(annView==='societe'){renderAnnuaireParSociete();return;}
+  var q=(document.getElementById('ann-search')||{value:''}).value.toLowerCase().trim();
+  var total=annuaire.length;
+  var nActifs=annuaire.filter(function(c){return(c.postes||[]).some(function(p){return p.actif;});}).length;
+  // Filter buttons
+  ['all','actif','inactif'].forEach(function(f){
+    var btn=document.getElementById('annf-'+f);if(!btn)return;
+    if(annFilter===f){btn.style.background='var(--ac)';btn.style.color='#fff';btn.style.borderColor='var(--ac)';}
+    else{btn.style.background='';btn.style.color='var(--tx)';btn.style.borderColor='';}
+  });
+  // Stats
+  var _socSet=new Set();
+  annuaire.forEach(function(c){(c.postes||[]).forEach(function(p){if(p.societe)_socSet.add(p.societe);});});
+  var statsEl=document.getElementById('ann-stats');
+  if(statsEl)statsEl.innerHTML=[
+    {l:'Total contacts',v:total,c:'c1'},{l:'Sociétés',v:_socSet.size,c:'c1'},
+    {l:'En poste',v:nActifs,c:'c4'},{l:'Changé de poste',v:total-nActifs,c:'c5'}
+  ].map(function(m){return'<div class="mc"><div class="mc-l">'+m.l+'</div><div class="mc-v '+m.c+'">'+m.v+'</div></div>';}).join('');
+  var list=_annFilteredList(q);
+  var tbody=document.getElementById('ann-body');var emEl=document.getElementById('ann-empty');
+  if(!tbody)return;
+  if(!annuaire.length){tbody.innerHTML='';if(emEl)emEl.style.display='block';return;}
+  if(emEl)emEl.style.display='none';
+  if(!list.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--txm)">Aucun contact correspondant</td></tr>';return;}
+  tbody.innerHTML=list.map(function(c){
+    var postes=c.postes||[];
+    var actifP=postes.find(function(p){return p.actif;})||postes[postes.length-1]||{};
+    var hasActif=postes.some(function(p){return p.actif;});
+    var nb=postes.length;
+    var dispNom=annDisplayName(c);
+    return'<tr>'
+      +'<td style="padding:8px 10px;font-weight:500;font-size:13px">'+escHtml(dispNom)
+        +(nb>1?'<span style="font-size:10px;font-weight:600;color:var(--ac);margin-left:6px;background:var(--bg2);padding:1px 6px;border-radius:10px">'+nb+'</span>':'')
+      +'</td>'
+      +'<td style="padding:8px 10px;font-size:12px">'+escHtml(actifP.societe||'—')+'</td>'
+      +'<td style="padding:8px 10px;font-size:12px;color:var(--tx2)">'+escHtml(actifP.poste||'—')+'</td>'
+      +'<td style="padding:8px 10px;font-size:12px">'+(actifP.email?'<a href="mailto:'+escHtml(actifP.email)+'" style="color:var(--ac);text-decoration:none">'+escHtml(actifP.email)+'</a>':'—')+'</td>'
+      +'<td style="padding:8px 10px;font-size:12px;color:var(--tx2)">'+escHtml(c.tel||actifP.tel||'—')+'</td>'
+      +'<td style="padding:8px 10px">'+(hasActif
+        ?'<span style="font-size:10px;font-weight:600;color:#1AAE6A;background:rgba(26,174,106,.12);padding:2px 8px;border-radius:10px">Actif</span>'
+        :'<span style="font-size:10px;font-weight:600;color:var(--txm);background:var(--bg2);padding:2px 8px;border-radius:10px">Inactif</span>')+'</td>'
+      +'<td style="padding:8px 10px;text-align:right;white-space:nowrap">'
+        +'<button class="abtn" onclick="openEditContactModal(\''+c.id+'\')" title="Modifier"><i class="ti ti-edit" style="font-size:13px"></i></button>'
+        +'<button class="abtn" onclick="delContact(\''+c.id+'\')" title="Supprimer"><i class="ti ti-trash" style="font-size:13px"></i></button>'
+      +'</td></tr>';
+  }).join('');
+  _updateDupBadge();
+}
+
+function renderAnnuaireParSociete(){
+  var q=(document.getElementById('ann-search')||{value:''}).value.toLowerCase().trim();
+  var list=_annFilteredList(q);
+  var el=document.getElementById('ann-societe-view');if(!el)return;
+  var socMap={};
+  list.forEach(function(c){
+    var seenSoc={};
+    (c.postes||[]).forEach(function(p){
+      var soc=(p.societe||'—');
+      if(seenSoc[soc])return;seenSoc[soc]=true;
+      if(!socMap[soc])socMap[soc]={nom:soc,contacts:[]};
+      socMap[soc].contacts.push({c:c,p:p});
+    });
+  });
+  // Group by first letter
+  var byLetter={};
+  Object.keys(socMap).sort(function(a,b){return a.localeCompare(b,'fr');}).forEach(function(soc){
+    var letter=(soc||'?')[0].normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
+    if(!/[A-Z]/.test(letter))letter='#';
+    if(!byLetter[letter])byLetter[letter]=[];
+    byLetter[letter].push(soc);
+  });
+  var letters=Object.keys(byLetter).sort();
+  if(!letters.length){el.innerHTML='<div style="text-align:center;padding:2rem;color:var(--txm)">Aucune société trouvée</div>';_updateDupBadge();return;}
+  if(!byLetter[annSocLetter])annSocLetter=letters[0];
+  // Letter index bar
+  var bar='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:14px">';
+  letters.forEach(function(l){
+    var active=l===annSocLetter;
+    bar+='<button onclick="annSocLetter=\''+l+'\';renderAnnuaireParSociete()" class="btno" style="font-size:11px;padding:2px 7px;min-width:26px;'+(active?'background:var(--ac);color:#fff;border-color:var(--ac)':'')+'">'+(l==='#'?'#':l)+'</button>';
+  });
+  bar+='</div>';
+  var socsForLetter=byLetter[annSocLetter]||[];
+  var totalSocs=Object.keys(socMap).length;
+  var info='<div style="font-size:11px;color:var(--txm);margin-bottom:10px">'+totalSocs+' société'+(totalSocs>1?'s':'')+' au total — '+socsForLetter.length+' sous <strong>'+annSocLetter+'</strong></div>';
+  function socCard(soc){
+    var s=socMap[soc];
+    var nActifs=s.contacts.filter(function(x){return x.p.actif;}).length;
+    var nInactifs=s.contacts.length-nActifs;
+    var sect=secteurs[soc]||autoSectorize(soc);
+    var col=SECT_COLORS[sect]||'#9E9E9E';
+    var opts=SECTEURS.map(function(sv){return'<option value="'+escHtml(sv)+'"'+(sv===sect?' selected':'')+'>'+escHtml(sv)+'</option>';}).join('');
+    var selEl='<select data-soc="'+escHtml(soc)+'" onchange="setSecteur(this)" onclick="event.stopPropagation()" style="font-size:10px;border:0.5px solid '+col+';border-radius:10px;padding:2px 4px;background:transparent;color:'+col+';cursor:pointer;max-width:140px;outline:none">'+opts+'</select>';
+    return'<div style="margin-bottom:10px;border:0.5px solid var(--bl);border-radius:8px;overflow:hidden">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg2);cursor:pointer" onclick="var d=this.nextElementSibling;d.style.display=d.style.display===\'none\'?\'block\':\'none\'">'
+        +'<div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">'
+          +'<i class="ti ti-building" style="color:var(--ac);font-size:14px;flex-shrink:0"></i>'
+          +'<span style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(soc)+'</span>'
+          +selEl
+        +'</div>'
+        +'<div style="display:flex;gap:6px;align-items:center;flex-shrink:0;margin-left:8px">'
+          +(nActifs?'<span style="font-size:10px;font-weight:600;color:#1AAE6A;background:rgba(26,174,106,.12);padding:2px 7px;border-radius:10px">'+nActifs+' actif'+(nActifs>1?'s':'')+'</span>':'')
+          +(nInactifs?'<span style="font-size:10px;font-weight:600;color:var(--txm);background:var(--bg2);border:0.5px solid var(--bl);padding:2px 7px;border-radius:10px">'+nInactifs+' inactif'+(nInactifs>1?'s':'')+'</span>':'')
+          +'<i class="ti ti-chevron-down" style="font-size:13px;color:var(--txm)"></i>'
+        +'</div>'
+      +'</div>'
+      +'<div style="display:none">'
+        +s.contacts.map(function(x){
+          var c=x.c,p=x.p;
+          return'<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-top:0.5px solid var(--bl)">'
+            +'<div>'
+              +'<span style="font-size:12px;font-weight:500">'+escHtml(annDisplayName(c))+'</span>'
+              +(p.poste?'<span style="font-size:11px;color:var(--tx2);margin-left:8px">'+escHtml(p.poste)+'</span>':'')
+            +'</div>'
+            +'<div style="display:flex;align-items:center;gap:12px">'
+              +(p.email?'<a href="mailto:'+escHtml(p.email)+'" style="font-size:11px;color:var(--ac);text-decoration:none">'+escHtml(p.email)+'</a>':'')
+              +(c.tel||p.tel?'<span style="font-size:11px;color:var(--tx2)">'+escHtml(c.tel||p.tel||'')+'</span>':'')
+              +(p.actif?'<span style="font-size:10px;font-weight:600;color:#1AAE6A;background:rgba(26,174,106,.12);padding:1px 6px;border-radius:10px">Actif</span>'
+                      :'<span style="font-size:10px;color:var(--txm);background:var(--bg2);padding:1px 6px;border-radius:10px">Inactif</span>')
+              +'<button class="abtn" onclick="openEditContactModal(\''+c.id+'\')" title="Modifier"><i class="ti ti-edit" style="font-size:12px"></i></button>'
+            +'</div>'
+          +'</div>';
+        }).join('')
+      +'</div>'
+    +'</div>';
+  }
+  el.innerHTML=bar+info+socsForLetter.map(socCard).join('');
+  el.querySelectorAll('select[data-soc]').forEach(_selAutoWidth);
+  _updateDupBadge();
+}
+
+function _posteRowHTML(p,i,canDel){
+  return'<div class="ann-poste-row" style="background:var(--bg2);border-radius:7px;padding:10px 12px;margin-bottom:8px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+      +'<span class="ann-poste-label" style="font-size:10px;font-weight:700;color:var(--txm);text-transform:uppercase;letter-spacing:.05em">Poste '+(i+1)+'</span>'
+      +'<div style="display:flex;align-items:center;gap:10px">'
+        +'<label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;user-select:none">'
+          +'<input type="checkbox" class="ann-poste-actif"'+(p.actif?' checked':'')+'> En poste actuellement'
+        +'</label>'
+        +'<button class="abtn ann-del-poste" onclick="annRemovePoste(this)" title="Supprimer ce poste" style="'+(canDel?'':'display:none')+'"><i class="ti ti-trash" style="font-size:12px;pointer-events:none"></i></button>'
+      +'</div>'
+    +'</div>'
+    +'<input type="hidden" class="ann-poste-id" value="'+escHtml(p.id||'')+'">'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+      +'<div class="fg" style="margin:0"><label class="flabel">Société</label><input class="ann-poste-societe" value="'+escHtml(p.societe||'')+'" placeholder="Société"></div>'
+      +'<div class="fg" style="margin:0"><label class="flabel">Titre / Poste</label><input class="ann-poste-titre" value="'+escHtml(p.poste||'')+'" placeholder="Directeur IT…"></div>'
+      +'<div class="fg" style="margin:0;grid-column:1/-1"><label class="flabel">Email professionnel</label><input type="email" class="ann-poste-email" value="'+escHtml(p.email||'')+'" placeholder="email@société.mg"></div>'
+    +'</div>'
+  +'</div>';
+}
+
+function _refreshPosteRows(){
+  var rows=document.getElementById('ann-postes-list').querySelectorAll('.ann-poste-row');
+  var canDel=rows.length>1;
+  rows.forEach(function(row,i){
+    var lbl=row.querySelector('.ann-poste-label');if(lbl)lbl.textContent='Poste '+(i+1);
+    var btn=row.querySelector('.ann-del-poste');if(btn)btn.style.display=canDel?'':'none';
+  });
+}
+
+function openAddContactModal(){
+  _annEditId=null;
+  document.getElementById('ann-contact-modal-title').textContent='Nouveau contact';
+  document.getElementById('ann-contact-prenom').value='';
+  document.getElementById('ann-contact-nom-famille').value='';
+  document.getElementById('ann-contact-tel').value='';
+  document.getElementById('ann-postes-list').innerHTML=_posteRowHTML({id:'ap_'+uid(),societe:'',poste:'',email:'',actif:true},0,false);
+  document.getElementById('ann-contact-modal').style.display='flex';
+  setTimeout(function(){document.getElementById('ann-contact-prenom').focus();},50);
+}
+
+function openEditContactModal(id){
+  var c=annuaire.find(function(x){return x.id===id;});if(!c)return;
+  _annEditId=id;
+  document.getElementById('ann-contact-modal-title').textContent='Modifier — '+escHtml(annDisplayName(c));
+  document.getElementById('ann-contact-prenom').value=c.prenom||'';
+  document.getElementById('ann-contact-nom-famille').value=c.nom||'';
+  document.getElementById('ann-contact-tel').value=c.tel||'';
+  var postes=c.postes&&c.postes.length?c.postes:[{id:'ap_'+uid(),societe:'',poste:'',email:'',actif:true}];
+  document.getElementById('ann-postes-list').innerHTML=postes.map(function(p,i){return _posteRowHTML(p,i,postes.length>1);}).join('');
+  document.getElementById('ann-contact-modal').style.display='flex';
+}
+
+function annAddPoste(){
+  var list=document.getElementById('ann-postes-list');
+  var tmp=document.createElement('div');
+  tmp.innerHTML=_posteRowHTML({id:'ap_'+uid(),societe:'',poste:'',email:'',actif:false},list.querySelectorAll('.ann-poste-row').length,true);
+  list.appendChild(tmp.firstChild);_refreshPosteRows();
+  list.lastElementChild.querySelector('.ann-poste-societe').focus();
+}
+function annRemovePoste(btn){
+  var list=document.getElementById('ann-postes-list');
+  if(list.querySelectorAll('.ann-poste-row').length<=1)return;
+  btn.closest('.ann-poste-row').remove();_refreshPosteRows();
+}
+
+function saveAnnContact(){
+  var prenom=titleCase((document.getElementById('ann-contact-prenom').value||'').trim());
+  var nom=(document.getElementById('ann-contact-nom-famille').value||'').trim().toUpperCase();
+  if(!nom){alert('Le nom de famille est obligatoire');return;}
+  var tel=normalizePhone(document.getElementById('ann-contact-tel').value);
+  var rows=document.getElementById('ann-postes-list').querySelectorAll('.ann-poste-row');
+  var postes=Array.from(rows).map(function(row){
+    return{
+      id:row.querySelector('.ann-poste-id').value||'ap_'+uid(),
+      societe:(row.querySelector('.ann-poste-societe').value||'').trim().toUpperCase(),
+      poste:(row.querySelector('.ann-poste-titre').value||'').trim(),
+      email:(row.querySelector('.ann-poste-email').value||'').trim().toLowerCase(),
+      actif:row.querySelector('.ann-poste-actif').checked
+    };
+  });
+  if(_annEditId){
+    var c=annuaire.find(function(x){return x.id===_annEditId;});
+    if(c){c.prenom=prenom;c.nom=nom;c.tel=tel;c.postes=postes;}
+  } else {
+    annuaire.push({id:'a_'+uid(),prenom:prenom,nom:nom,tel:tel,postes:postes});
+  }
+  persist();closeModals();renderAnnuaire();
+}
+
+function delContact(id){
+  var c=annuaire.find(function(x){return x.id===id;});
+  if(!c||!confirm('Supprimer "'+annDisplayName(c)+'" de l\'annuaire ?'))return;
+  annuaire=annuaire.filter(function(x){return x.id!==id;});
+  persist();renderAnnuaire();
+}
+
+// ── DOUBLONS ────────────────────────────────────────────────────────────────
+function _normCmp(c){
+  return ((c.prenom||'')+' '+(c.nom||'')).normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .toUpperCase().replace(/[^A-Z\s]/g,'').trim().split(/\s+/).sort().join(' ');
+}
+
+function findDupGroups(){
+  var byEmail={},byName={},groups=[],seen=new Set();
+  annuaire.forEach(function(c){
+    (c.postes||[]).forEach(function(p){
+      if(p.email&&p.email.length>4){
+        if(!byEmail[p.email])byEmail[p.email]=[];
+        if(!byEmail[p.email].find(function(x){return x.id===c.id;}))byEmail[p.email].push(c);
+      }
+    });
+    var nk=_normCmp(c);if(!nk)return;
+    if(!byName[nk])byName[nk]=[];byName[nk].push(c);
+  });
+  function addG(arr,reason){
+    if(arr.length<2)return;
+    var key=arr.map(function(c){return c.id;}).sort().join(',');
+    if(seen.has(key))return;seen.add(key);groups.push({reason:reason,contacts:arr});
+  }
+  Object.values(byEmail).forEach(function(a){addG(a,'email');});
+  Object.values(byName).forEach(function(a){addG(a,'nom');});
+  return groups;
+}
+
+function _updateDupBadge(){
+  var btn=document.getElementById('ann-dup-btn');if(!btn)return;
+  var n=findDupGroups().length;
+  if(n){btn.style.display='';btn.innerHTML='<i class="ti ti-copy" style="font-size:11px;margin-right:3px"></i>'+n+' doublon'+(n>1?'s':'');}
+  else{btn.style.display='none';}
+}
+
+function openDupModal(){
+  var groups=findDupGroups();
+  var body=document.getElementById('ann-dup-body');
+  if(!body){document.getElementById('ann-dup-modal').style.display='flex';return;}
+  if(!groups.length){
+    body.innerHTML='<div style="padding:2rem;text-align:center;color:var(--txm)"><i class="ti ti-check" style="font-size:32px;display:block;margin-bottom:10px;color:#1AAE6A"></i>Aucun doublon détecté</div>';
+    document.getElementById('ann-dup-modal').style.display='flex';return;
+  }
+  body.innerHTML=groups.map(function(g,gi){
+    var tag=g.reason==='email'
+      ?'<span style="font-size:10px;font-weight:700;background:rgba(26,122,234,.12);color:#1A7AEA;padding:1px 7px;border-radius:10px">même email</span>'
+      :'<span style="font-size:10px;font-weight:700;background:rgba(232,92,0,.1);color:#e85c00;padding:1px 7px;border-radius:10px">nom similaire</span>';
+    return'<div style="margin-bottom:14px;border:0.5px solid var(--bl);border-radius:8px;overflow:hidden">'
+      +'<div style="padding:8px 14px;background:var(--bg2);border-bottom:0.5px solid var(--bl);display:flex;align-items:center;gap:8px">'
+        +'<span style="font-size:12px;font-weight:600">Groupe '+(gi+1)+'</span>'+tag
+        +'<span style="font-size:11px;color:var(--txm)">'+g.contacts.length+' contacts</span>'
+      +'</div>'
+      +g.contacts.map(function(c){
+        var postes=c.postes||[];
+        var emails=[...new Set(postes.map(function(p){return p.email;}).filter(Boolean))].join(', ');
+        var socs=[...new Set(postes.map(function(p){return p.societe;}).filter(Boolean))].join(' · ');
+        var otherIds=g.contacts.filter(function(x){return x.id!==c.id;}).map(function(x){return'\''+x.id+'\''});
+        return'<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:0.5px solid var(--bl)">'
+          +'<div style="min-width:0;flex:1;margin-right:12px">'
+            +'<div style="font-size:13px;font-weight:500">'+escHtml(annDisplayName(c))+'</div>'
+            +(socs?'<div style="font-size:11px;color:var(--tx2);margin-top:2px">'+escHtml(socs)+'</div>':'')
+            +(emails?'<div style="font-size:11px;color:var(--ac);margin-top:1px">'+escHtml(emails)+'</div>':'')
+            +(c.tel?'<div style="font-size:11px;color:var(--tx2)">'+escHtml(c.tel)+'</div>':'')
+            +'<div style="font-size:10px;color:var(--txm);margin-top:2px">'+postes.length+' poste'+(postes.length>1?'s':'')+'</div>'
+          +'</div>'
+          +'<div style="display:flex;gap:6px;flex-direction:column;align-items:flex-end;flex-shrink:0">'
+            +'<button class="btna" onclick="mergeContacts(\''+c.id+'\',['+otherIds+'])" style="font-size:11px;padding:4px 10px;white-space:nowrap">Garder &amp; fusionner</button>'
+            +'<button class="abtn" onclick="if(confirm(\'Supprimer ?\''+')'+'{'+'delContactQuiet(\''+c.id+'\');openDupModal();renderAnnuaire();'+'}'+'" style="font-size:11px;color:var(--danger);padding:2px 6px"><i class="ti ti-trash" style="font-size:12px"></i> Supprimer</button>'
+          +'</div>'
+        +'</div>';
+      }).join('')
+    +'</div>';
+  }).join('');
+  document.getElementById('ann-dup-modal').style.display='flex';
+}
+
+function delContactQuiet(id){annuaire=annuaire.filter(function(x){return x.id!==id;});persist();}
+
+function mergeContacts(keepId,removeIds){
+  var keep=annuaire.find(function(c){return c.id===keepId;});if(!keep)return;
+  removeIds.forEach(function(rid){
+    var rem=annuaire.find(function(c){return c.id===rid;});if(!rem)return;
+    var existKeys=new Set((keep.postes||[]).map(function(p){return(p.societe||'')+'|'+(p.email||'');}));
+    (rem.postes||[]).forEach(function(p){
+      var pk=(p.societe||'')+'|'+(p.email||'');
+      if(!existKeys.has(pk)){if(!keep.postes)keep.postes=[];keep.postes.push(p);existKeys.add(pk);}
+    });
+    if(!keep.tel&&rem.tel)keep.tel=rem.tel;
+    if(!keep.prenom&&rem.prenom)keep.prenom=rem.prenom;
+  });
+  annuaire=annuaire.filter(function(c){return c.id===keepId||removeIds.indexOf(c.id)===-1;});
+  persist();openDupModal();renderAnnuaire();
+}
+
+// ── DOUBLONS SOCIÉTÉS ────────────────────────────────────────────────────────
+function _normSocCmp(s){
+  return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .toUpperCase().replace(/[^A-Z0-9\s]/g,'').trim().split(/\s+/).sort().join(' ');
+}
+var _socDupGroups=[];
+var _rawSocCnt={};
+function findSocieteDups(){
+  var names=Object.keys(_rawSocCnt);
+  if(!names.length){
+    // fallback: build from live data
+    var cnt={};
+    function add(s){s=(s||'').trim();if(!s||s==='—')return;cnt[s]=(cnt[s]||0)+1;}
+    participants.forEach(function(p){add(p.societe);});
+    pistes.forEach(function(p){add(p.societe);});
+    opps.forEach(function(o){add(o.societe);});
+    mailings.forEach(function(m){(m.contacts||[]).forEach(function(c){add(c.societe);});});
+    annuaire.forEach(function(c){(c.postes||[]).forEach(function(p){add(p.societe);});});
+    names=Object.keys(cnt);
+    if(!names.length)return[];
+    names.forEach(function(s){_rawSocCnt[s]=cnt[s];});
+  }
+  function toks(s){
+    return(s||'').replace(/\([^)]*\)/g,'').normalize('NFD').replace(/[̀-ͯ]/g,'')
+      .toUpperCase().replace(/[^A-Z0-9\s]/g,'').trim().split(/\s+/).filter(Boolean);
+  }
+  var tokMap={},keyMap={};
+  names.forEach(function(s){tokMap[s]=toks(s);keyMap[s]=_normSocCmp(s);});
+  var exact={};
+  names.forEach(function(s){var k=keyMap[s];if(!exact[k])exact[k]=[];exact[k].push(s);});
+  var result=[],done=new Set();
+  Object.values(exact).forEach(function(g){
+    if(g.length<2)return;
+    g.forEach(function(s){done.add(s);});
+    result.push(g.map(function(s){return{nom:s,count:_rawSocCnt[s]};}).sort(function(a,b){return b.count-a.count;}));
+  });
+  var free=names.filter(function(s){return!done.has(s);})
+    .sort(function(a,b){return tokMap[a].length-tokMap[b].length;});
+  var subDone=new Set(),subGroups={};
+  free.forEach(function(a){
+    if(subDone.has(a))return;
+    var at=tokMap[a];
+    if(at.length===1&&at[0].length<3)return;
+    var ak=keyMap[a];
+    free.forEach(function(b){
+      if(a===b||subDone.has(b))return;
+      var bt=tokMap[b];
+      if(bt.length<=at.length)return;
+      var bs=new Set(bt);
+      if(at.every(function(t){return bs.has(t);})){
+        if(!subGroups[ak])subGroups[ak]=[a];
+        if(subGroups[ak].indexOf(b)<0)subGroups[ak].push(b);
+        subDone.add(a);subDone.add(b);
+      }
+    });
+  });
+  Object.values(subGroups).forEach(function(g){
+    if(g.length<2)return;
+    result.push(g.map(function(s){return{nom:s,count:_rawSocCnt[s]};}).sort(function(a,b){return b.count-a.count;}));
+  });
+  return result;
+}
+function _updateSocDupBadge(){
+  var n=findSocieteDups().length;
+  var label=n?'<i class="ti ti-building" style="font-size:11px;margin-right:3px"></i>'+n+' société'+(n>1?'s':'')+'':'';
+  ['soc-dup-btn','ann-soc-dup-btn'].forEach(function(id){
+    var btn=document.getElementById(id);if(!btn)return;
+    if(n){btn.style.display='';btn.innerHTML=label;}else btn.style.display='none';
+  });
+}
+function openSocieteDupModal(){
+  _socDupGroups=findSocieteDups();
+  var body=document.getElementById('soc-dup-body');
+  if(!body){document.getElementById('soc-dup-modal').style.display='flex';return;}
+  if(!_socDupGroups.length){
+    body.innerHTML='<div style="padding:2rem;text-align:center;color:var(--txm)"><i class="ti ti-check" style="font-size:32px;display:block;margin-bottom:10px;color:#1AAE6A"></i>Aucun doublon de société détecté</div>';
+    document.getElementById('soc-dup-modal').style.display='flex';return;
+  }
+  body.innerHTML=_socDupGroups.map(function(g,gi){
+    return'<div style="margin-bottom:14px;border:0.5px solid var(--bl);border-radius:8px;overflow:hidden">'
+      +'<div style="padding:10px 14px;background:var(--bg2);border-bottom:0.5px solid var(--bl)">'
+        +'<div style="font-size:12px;font-weight:600;margin-bottom:8px">Groupe '+(gi+1)
+          +' <span style="font-size:10px;font-weight:400;color:var(--txm)">'+g.length+' variantes — cliquer une variante pour la sélectionner</span></div>'
+        +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">'
+          +g.map(function(v){
+            return'<button class="btno" onclick="document.getElementById(\'sdup-'+gi+'\').value=this.dataset.nom" data-nom="'+escHtml(v.nom)+'" style="font-size:11px;padding:3px 8px">'
+              +escHtml(v.nom)+'<span style="font-size:10px;color:var(--txm);margin-left:5px">×'+v.count+'</span></button>';
+          }).join('')
+        +'</div>'
+        +'<div style="display:flex;gap:8px;align-items:center">'
+          +'<input id="sdup-'+gi+'" value="'+escHtml(g[0].nom)+'" style="flex:1;font-size:12px;border:0.5px solid var(--bl);border-radius:6px;padding:5px 8px;background:var(--bg);color:var(--tx)" placeholder="Nom canonique…">'
+          +'<button class="btna" onclick="applySocGroup('+gi+')" style="font-size:11px;padding:5px 14px;white-space:nowrap"><i class="ti ti-check" style="font-size:11px;margin-right:3px"></i>Appliquer</button>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+  document.getElementById('soc-dup-modal').style.display='flex';
+}
+function applySocGroup(gi){
+  var newName=(document.getElementById('sdup-'+gi)||{value:''}).value.trim();
+  if(!newName)return;
+  (_socDupGroups[gi]||[]).forEach(function(v){if(v.nom!==newName)renameSociete(v.nom,newName);});
+  persist();
+  _socDupGroups=findSocieteDups();
+  if(!_socDupGroups.length)closeModals();
+  else openSocieteDupModal();
+  renderSocietes();
+}
+function renameSociete(oldName,newName){
+  if(!newName||oldName===newName)return;
+  function rep(s){return s===oldName?newName:s;}
+  participants.forEach(function(p){p.societe=rep(p.societe);});
+  pistes.forEach(function(p){p.societe=rep(p.societe);});
+  opps.forEach(function(o){o.societe=rep(o.societe);});
+  mailings.forEach(function(m){(m.contacts||[]).forEach(function(c){c.societe=rep(c.societe);});});
+  annuaire.forEach(function(c){(c.postes||[]).forEach(function(p){p.societe=rep(p.societe);});});
+}
+
 // ── SOCIÉTÉS ───────────────────────────────────────────────────────────────
 function renderSocietes(){
   const q=(document.getElementById('soc-search')||{value:''}).value.toLowerCase();
@@ -1481,7 +2056,7 @@ function convertEnPiste(source, id){
 
   if(pisteId){
     var np=pistes.find(function(lp){return lp.id===pisteId;});
-    if(np&&!np.stage) np.stage='Analyse besoin';
+    if(np&&!np.stage) np.stage='Qualification besoin';
     persist();
     if(curTab==='dashboard')renderDash();
     if(curTab==='pistes')renderPistes();
@@ -1508,9 +2083,8 @@ function openEnterPipeline(pisteId){
   document.getElementById('o-stage').value='Demande RDV';
   updateActionList('o-action','o-stage');
   document.getElementById('o-reldate').value='';
-  document.getElementById('o-urgence').value='vert';
-  document.getElementById('o-assigne').value=pisteId?p.assigne||'':'';
-  document.getElementById('o-valeur').value='';
+  document.getElementById('o-temperature').value=pisteId&&p?p.temperature||'tiede':'tiede';
+  document.getElementById('o-assigne').value=pisteId&&p?p.assigne||'':'';
   document.getElementById('o-notes').value='';
   document.getElementById('opp-modal').style.display='flex';
 }
@@ -1569,9 +2143,8 @@ function saveOpp(){
     stage:document.getElementById('o-stage').value,
     next_action:document.getElementById('o-action').value,
     reldate:document.getElementById('o-reldate').value,
-    urgence:document.getElementById('o-urgence').value,
+    temperature:document.getElementById('o-temperature').value,
     assigne:document.getElementById('o-assigne').value,
-    valeur:parseInt(document.getElementById('o-valeur').value)||0,
     notes:document.getElementById('o-notes').value.trim(),
     created:new Date().toISOString()
   };
@@ -1591,13 +2164,12 @@ function openEditPisteInPipe(id){
   document.getElementById('edit-info').innerHTML=
     '<strong>'+(p.nom||'—')+'</strong> — '+p.societe
     +'<br><span style="color:var(--txm);font-size:12px">'+(p.evtnom||p.source||'')+'</span>';
-  document.getElementById('e-stage').value=p.stage||'Analyse besoin';
+  document.getElementById('e-stage').value=p.stage||'Qualification besoin';
   updateActionList('e-action','e-stage');
   document.getElementById('e-action').value=p.next_action||'';
   document.getElementById('e-reldate').value=p.reldate||'';
-  document.getElementById('e-urgence').value=p.urgence||'vert';
+  document.getElementById('e-temperature').value=p.temperature||'tiede';
   document.getElementById('e-assigne').value=p.assigne||'';
-  document.getElementById('e-valeur').value=p.valeur||'';
   document.getElementById('e-solution').value=p.solution||'';
   document.getElementById('e-notes').value=p.notes||'';
   document.getElementById('edit-modal').style.display='flex';
@@ -1609,9 +2181,8 @@ function saveEdit(){
   p.stage=document.getElementById('e-stage').value;
   p.next_action=document.getElementById('e-action').value;
   p.reldate=document.getElementById('e-reldate').value;
-  p.urgence=document.getElementById('e-urgence').value;
+  p.temperature=document.getElementById('e-temperature').value;
   p.assigne=document.getElementById('e-assigne').value;
-  p.valeur=parseInt(document.getElementById('e-valeur').value)||0;
   p.solution=document.getElementById('e-solution').value;
   p.notes=document.getElementById('e-notes').value.trim();
   persist();closeModals();updateTopbar();
@@ -1622,7 +2193,7 @@ function saveEdit(){
 }
 
 function closeModals(){
-  ['opp-modal','piste-modal','edit-modal','edit-piste-modal','add-piste-modal','add-mailing-modal','add-mailing-contact-modal','import-mailing-modal','edit-mailing-contact-modal','add-event-modal','add-participant-modal','edit-participant-modal','termine-modal'].forEach(id=>{
+  ['opp-modal','piste-modal','edit-modal','edit-piste-modal','add-piste-modal','add-mailing-modal','add-mailing-contact-modal','import-mailing-modal','edit-mailing-contact-modal','add-event-modal','add-participant-modal','edit-participant-modal','termine-modal','ann-contact-modal','ann-dup-modal','soc-dup-modal'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.style.display='none';
   });
   editOppId=null;convPartId=null;
@@ -2556,7 +3127,7 @@ document.addEventListener('click',function(e){
   const id=btn.getAttribute('data-id');
   const sid=btn.getAttribute('data-sid');
   if(act==='openPisteModal')openPisteModal(id);
-  else if(act==='enterPipeline'){e.stopPropagation();var _ep=getPiste(id);if(_ep&&!_ep.stage){_ep.stage='Analyse besoin';persist();renderPistes();renderDash();}}
+  else if(act==='enterPipeline'){e.stopPropagation();var _ep=getPiste(id);if(_ep&&!_ep.stage){_ep.stage='Qualification besoin';persist();renderPistes();renderDash();}}
   else if(act==='editPisteInPipe'){e.stopPropagation();openEditPisteInPipe(id);}
   else if(act==='delOpp'){e.stopPropagation();}
   else if(act==='openEditPiste'){e.stopPropagation();openEditPiste(id);}
@@ -3192,7 +3763,7 @@ function mailingToPiste(mailingId,contactId){
     solution:'',assigne:'',notes:'',
     created:new Date().toISOString()
   };
-  piste.stage='Analyse besoin';
+  piste.stage='Qualification besoin';
   pistes.unshift(piste);
   if(!c.piste_ids)c.piste_ids=[];
   c.piste_ids.push(piste.id);
@@ -3445,6 +4016,46 @@ document.addEventListener('click',function(e){
       <button class="bcancel" onclick="closeModals()">Annuler</button>
       <button class="bsave" onclick="saveEditMailingContact()">Enregistrer</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL DOUBLONS SOCIÉTÉS -->
+<div class="overlay" id="soc-dup-modal" style="display:none" onclick="if(event.target.id==='soc-dup-modal')closeModals()">
+  <div class="modal" style="max-width:640px">
+    <div class="mhd"><span>Doublons de sociétés</span><button class="abtn" onclick="closeModals()"><i class="ti ti-x"></i></button></div>
+    <div id="soc-dup-body" class="mbody" style="max-height:72vh;overflow-y:auto;padding:14px"></div>
+    <div class="fact"><button class="bcancel" onclick="closeModals()">Fermer</button></div>
+  </div>
+</div>
+
+<!-- MODAL DOUBLONS ANNUAIRE -->
+<div class="overlay" id="ann-dup-modal" style="display:none" onclick="if(event.target.id==='ann-dup-modal')closeModals()">
+  <div class="modal" style="max-width:680px">
+    <div class="mhd"><span>Doublons détectés</span><button class="abtn" onclick="closeModals()"><i class="ti ti-x"></i></button></div>
+    <div id="ann-dup-body" class="mbody" style="max-height:72vh;overflow-y:auto;padding:14px"></div>
+    <div class="fact"><button class="bcancel" onclick="closeModals()">Fermer</button></div>
+  </div>
+</div>
+
+<!-- MODAL CONTACT ANNUAIRE -->
+<div class="overlay" id="ann-contact-modal" style="display:none" onclick="if(event.target.id==='ann-contact-modal')closeModals()">
+  <div class="modal" style="max-width:560px">
+    <div class="mhd"><span id="ann-contact-modal-title">Nouveau contact</span><button class="abtn" onclick="closeModals()"><i class="ti ti-x"></i></button></div>
+    <div class="mbody" style="max-height:70vh;overflow-y:auto">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div class="fg" style="margin:0"><label class="flabel">Prénom</label><input id="ann-contact-prenom" type="text" placeholder="Loïc"></div>
+        <div class="fg" style="margin:0"><label class="flabel">NOM de famille *</label><input id="ann-contact-nom-famille" type="text" placeholder="RAOBELINA" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
+      </div>
+      <div class="fg"><label class="flabel">Tél mobile</label><input id="ann-contact-tel" type="tel" placeholder="+261 XX XX XXX XX"></div>
+      <div style="margin-top:1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span class="flabel" style="margin-bottom:0">Postes / Sociétés</span>
+          <button class="btno" onclick="annAddPoste()" style="font-size:11px;padding:3px 10px"><i class="ti ti-plus" style="font-size:11px;margin-right:3px"></i>Ajouter un poste</button>
+        </div>
+        <div id="ann-postes-list"></div>
+      </div>
+    </div>
+    <div class="fact"><button class="bcancel" onclick="closeModals()">Annuler</button><button class="bsave" onclick="saveAnnContact()">Enregistrer</button></div>
   </div>
 </div>
 
